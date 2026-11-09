@@ -5,11 +5,20 @@
   - [1. 시작 전 (Mac)](#1-시작-전-mac)
   - [2. 사전 점검 (서버)](#2-사전-점검-서버)
   - [3. 노드 준비 (서버)](#3-노드-준비-서버)
+    - [데이터 폴더](#데이터-폴더)
+    - [swap 끄기](#swap-끄기)
+    - [커널 모듈과 네트워크 설정](#커널-모듈과-네트워크-설정)
+    - [containerd 설정](#containerd-설정)
+    - [kubeadm, kubelet, kubectl, Helm 설치](#kubeadm-kubelet-kubectl-helm-설치)
   - [4. 클러스터 생성 (서버)](#4-클러스터-생성-서버)
   - [5. Cilium 설치 (서버)](#5-cilium-설치-서버)
   - [6. DNS와 기존 서비스 확인 (서버)](#6-dns와-기존-서비스-확인-서버)
   - [7. 접속 확인 (Mac)](#7-접속-확인-mac)
   - [8. 재부팅 복구 확인 (서버)](#8-재부팅-복구-확인-서버)
+- [진행](#진행)
+  - [2.사전 점검](#2사전-점검)
+  - [3. 노드 준비](#3-노드-준비)
+  - [4. 클러스터 생성](#4-클러스터-생성)
 
 ---
 
@@ -716,3 +725,274 @@ drwxrwsr-x 7 choimory homeserver 4096 Nov  3 14:47 choimory-docker-compose
 drwxrwsr-x 5 choimory homeserver 4096 Nov  9 23:49 choimory-gitops
 choimory@choimory-server:/data/dev/choimory/repo$ 
 ```
+
+- git clone
+
+```shell
+choimory@choimory-server:/data/dev/choimory/repo$ cd /data/dev/choimory/repo/choimory-gitops
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ ls bootstrap
+cilium-values.yaml  kubeadm-config.yaml  root.yaml
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ cp bootstrap/kubeadm-config.yaml bootstrap/cilium-values.yaml ~/
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ TS_IP=$(tailscale ip -4)
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ TS_NAME=$(tailscale status --json | grep -m1 '"DNSName"' | sed -E 's/.*"DNSName": "([^"]+)\.".*/\1/')
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sed -i "s/<TS_NET_NAME>/$TS_NAME/; s/<TAILSCALE_IP>/$TS_IP/" ~/kubeadm-config.yaml
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ grep -A3 certSANs ~/kubeadm-config.yaml
+```
+
+- bootstrap 실행하여 설치
+- `sed` 치환
+- 실제 값은 홈 디렉토리의 복사본에만 들어감
+- tailscale 아이피와 도메인은 비공개
+
+```shell
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sudo kubeadm init --config ~/kubeadm-config.yaml
+[sudo: authenticate] Password:       
+[init] Using Kubernetes version: v1.36.6
+[preflight] Running pre-flight checks
+[preflight] Pulling images required for setting up a Kubernetes cluster
+[preflight] This might take a minute or two, depending on the speed of your internet connection
+[preflight] You can also perform this action beforehand using 'kubeadm config images pull'
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sudo kubeadm init --config ~/kubeadm-config.yaml
+[sudo: authenticate] Password:       
+[init] Using Kubernetes version: v1.36.6
+[preflight] Running pre-flight checks
+[preflight] Pulling images required for setting up a Kubernetes cluster
+[preflight] This might take a minute or two, depending on the speed of your internet connection
+[preflight] You can also perform this action beforehand using 'kubeadm config images pull'[certs] Using certificateDir folder "/etc/kubernetes/pki"
+[certs] Generating "ca" certificate and key
+[certs] Generating "apiserver" certificate and key
+[certs] apiserver serving cert is signed for DNS names [choimory-server <TS_NET_NAME> kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 192.168.10.201 <TAILSCALE_IP>]
+[certs] Generating "apiserver-kubelet-client" certificate and key
+[certs] Generating "front-proxy-ca" certificate and key
+[certs] Generating "front-proxy-client" certificate and key
+[certs] Generating "etcd/ca" certificate and key
+[certs] Generating "etcd/server" certificate and key
+[certs] etcd/server serving cert is signed for DNS names [choimory-server localhost] and IPs [192.168.10.201 127.0.0.1 ::1]
+[certs] Generating "etcd/peer" certificate and key
+[certs] etcd/peer serving cert is signed for DNS names [choimory-server localhost] and IPs [192.168.10.201 127.0.0.1 ::1]
+[certs] Generating "etcd/healthcheck-client" certificate and key
+[certs] Generating "apiserver-etcd-client" certificate and key
+[certs] Generating "sa" key and public key
+[kubeconfig] Using kubeconfig folder "/etc/kubernetes"
+[kubeconfig] Writing "admin.conf" kubeconfig file
+[kubeconfig] Writing "super-admin.conf" kubeconfig file
+[kubeconfig] Writing "kubelet.conf" kubeconfig file
+[kubeconfig] Writing "controller-manager.conf" kubeconfig file
+[kubeconfig] Writing "scheduler.conf" kubeconfig file
+[etcd] Creating static Pod manifest for local etcd in "/etc/kubernetes/manifests"
+[control-plane] Using manifest folder "/etc/kubernetes/manifests"
+[control-plane] Creating static Pod manifest for "kube-apiserver"
+[control-plane] Creating static Pod manifest for "kube-controller-manager"
+[control-plane] Creating static Pod manifest for "kube-scheduler"
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/instance-config.yaml"
+[patches] Applied patch of type "application/strategic-merge-patch+json" to target "kubeletconfiguration"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Starting the kubelet
+[wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests"
+[kubelet-check] Waiting for a healthy kubelet at http://127.0.0.1:10248/healthz. This can take up to 4m0s
+[kubelet-check] The kubelet is healthy after 431.654µs
+[control-plane-check] Waiting for healthy control plane components. This can take up to 4m0s
+[control-plane-check] Checking kube-apiserver at https://192.168.10.201:6443/livez
+[control-plane-check] Checking kube-controller-manager at https://127.0.0.1:10257/healthz
+[control-plane-check] Checking kube-scheduler at https://127.0.0.1:10259/livez
+[control-plane-check] kube-controller-manager is healthy after 2.261038ms
+[control-plane-check] kube-scheduler is healthy after 2.523725ms
+[control-plane-check] kube-apiserver is healthy after 1.501256578s
+[upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
+[kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
+[upload-certs] Skipping phase. Please see --upload-certs
+[mark-control-plane] Marking the node choimory-server as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
+[mark-control-plane] Marking the node choimory-server as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
+[bootstrap-token] Using token: <BOOTSTRAP_TOKEN>
+[bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
+[bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
+[bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
+[bootstrap-token] Configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
+[bootstrap-token] Configured RBAC rules to allow certificate rotation for all node client certificates in the cluster
+[bootstrap-token] Configured RBAC rules to allow the API server kubelet client certificate to access the kubelet API
+[bootstrap-token] Creating the "cluster-info" ConfigMap in the "kube-public" namespace
+[kubelet-finalize] Updating "/etc/kubernetes/kubelet.conf" to point to a rotatable kubelet client certificate and key
+[addons] Applied essential addon: CoreDNS
+[addons] Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 192.168.10.201:6443 --token <BOOTSTRAP_TOKEN> \
+        --discovery-token-ca-cert-hash sha256:<CA_CERT_HASH> 
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+```
+
+- 클러스터 생성
+- 출력 끝의 `kubeadm join` 토큰은 비공개
+- join 토큰은 따로 저장할 필요는 없음
+
+```shell
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ mkdir -p ~/.kube
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sudo chown "$(id -u):$(id -g)" ~/.kube/config
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ chmod 600 ~/.kube/config
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+node/choimory-server untainted
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl get nodes
+NAME              STATUS     ROLES           AGE    VERSION
+choimory-server   NotReady   control-plane   6m3s   v1.36.6
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl get pods -A
+NAMESPACE     NAME                                      READY   STATUS    RESTARTS   AGE
+kube-system   coredns-589f44dc88-2s5xj                  0/1     Pending   0          5m56s
+kube-system   coredns-589f44dc88-42qq7                  0/1     Pending   0          5m56s
+kube-system   etcd-choimory-server                      1/1     Running   0          6m3s
+kube-system   kube-apiserver-choimory-server            1/1     Running   0          6m3s
+kube-system   kube-controller-manager-choimory-server   1/1     Running   0          6m3s
+kube-system   kube-proxy-8dsgf                          1/1     Running   0          5m56s
+kube-system   kube-scheduler-choimory-server            1/1     Running   0          6m3s
+```
+
+- kubectl 설정과 taint 제거
+- 확인: Cilium 설치 전이라 노드 `NotReady`, CoreDNS `Pending`이 정상
+
+```shell
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ helm repo add cilium https://helm.cilium.io
+"cilium" has been added to your repositories
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "cilium" chart repository
+Update Complete. ⎈Happy Helming!⎈
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ helm install cilium cilium/cilium --version 1.20.4 -n kube-system -f ~/cilium-values.yaml
+NAME: cilium
+LAST DEPLOYED: Tue Nov 10 00:09:24 2026
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+You have successfully installed Cilium.
+
+Your release version is 1.20.4.
+
+For any further help, visit https://docs.cilium.io/en/v1.20/gettinghelp
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl -n kube-system rollout status ds/cilium --timeout=5m
+Waiting for daemon set "cilium" rollout to finish: 0 of 1 updated pods are available...
+daemon set "cilium" successfully rolled out
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl get nodes -o wide
+NAME              STATUS   ROLES           AGE   VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION             CONTAINER-RUNTIME
+choimory-server   Ready    control-plane   11m   v1.36.6   192.168.10.201   <none>        Ubuntu 26.04.1 LTS   7.0.0-42-generic (amd64)   containerd://2.4.2
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl get pods -A
+NAMESPACE     NAME                                      READY   STATUS    RESTARTS   AGE
+kube-system   cilium-envoy-f852f                        1/1     Running   0          88s
+kube-system   cilium-kzfj8                              1/1     Running   0          88s
+kube-system   cilium-operator-6c4c574b46-pfvdj          1/1     Running   0          88s
+kube-system   coredns-589f44dc88-2s5xj                  1/1     Running   0          11m
+kube-system   coredns-589f44dc88-42qq7                  1/1     Running   0          11m
+kube-system   etcd-choimory-server                      1/1     Running   0          11m
+kube-system   kube-apiserver-choimory-server            1/1     Running   0          11m
+kube-system   kube-controller-manager-choimory-server   1/1     Running   0          11m
+kube-system   kube-proxy-8dsgf                          1/1     Running   0          11m
+kube-system   kube-scheduler-choimory-server            1/1     Running   0          11m
+```
+
+- Cilium 설치
+- 확인: 노드 `Ready`, CoreDNS `Running`
+
+```shell
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl run dns-test --rm -it --restart=Never --image=busybox:1.37 -- nslookup kubernetes.default.svc.cluster.local
+Server:         10.96.0.10
+Address:        10.96.0.10:53
+
+Name:   kubernetes.default.svc.cluster.local
+Address: 10.96.0.1
+
+
+All commands and output from this session will be recorded in container logs, including credentials and sensitive information passed through the command prompt.
+If you don't see a command prompt, try pressing enter.
+warning: couldn't attach to pod/dns-test, falling back to streaming logs: Internal error occurred: Internal error occurred: error attaching to container: failed to load task: no running task found: not found
+Server:         10.96.0.10
+Address:        10.96.0.10:53
+
+Name:   kubernetes.default.svc.cluster.local
+Address: 10.96.0.1
+
+
+pod "dns-test" deleted from default namespace
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl run dns-test --rm -it --restart=Never --image=busybox:1.37 -- nslookup github.com
+Server:         10.96.0.10
+Address:        10.96.0.10:53
+
+Non-authoritative answer:
+
+Non-authoritative answer:
+Name:   github.com
+Address: 20.200.245.247
+
+All commands and output from this session will be recorded in container logs, including credentials and sensitive information passed through the command prompt.
+If you don't see a command prompt, try pressing enter.
+warning: couldn't attach to pod/dns-test, falling back to streaming logs: Internal error occurred: Internal error occurred: error attaching to container: failed to load task: no running task found: not found
+Server:         10.96.0.10
+Address:        10.96.0.10:53
+
+Non-authoritative answer:
+
+Non-authoritative answer:
+Name:   github.com
+Address: 20.200.245.247
+
+pod "dns-test" deleted from default namespace
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ tailscale status | head -3
+<TAILSCALE_IP>     choimory-server   choimory@  linux    idle; offers exit node     
+<TAILSCALE_IP>   <DEVICE_NAME>  choimory@  windows  offline, last seen 5h ago  
+<TAILSCALE_IP>   <DEVICE_NAME>     choimory@  iOS      -                          
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ diff <(docker ps --format '{{.Names}}' | sort) <(cut -d: -f1 ~/docker-before.txt | sort)
+```
+
+- DNS와 기존 서비스 확인
+- 확인: 두 `nslookup` 모두 주소가 나오고 `diff` 출력이 없어야 함
+
+```shell
+choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sudo reboot
+choimory@choimory-server:~$ swapon --show
+choimory@choimory-server:~$ systemctl is-active containerd docker kubelet tailscaled
+active
+active
+active
+active
+choimory@choimory-server:~$ kubectl get nodes
+NAME              STATUS   ROLES           AGE   VERSION
+choimory-server   Ready    control-plane   24m   v1.36.6
+choimory@choimory-server:~$ kubectl get pods -A
+NAMESPACE     NAME                                      READY   STATUS    RESTARTS      AGE
+kube-system   cilium-envoy-f852f                        1/1     Running   1 (10m ago)   15m
+kube-system   cilium-kzfj8                              1/1     Running   1 (10m ago)   15m
+kube-system   cilium-operator-6c4c574b46-pfvdj          1/1     Running   1 (10m ago)   15m
+kube-system   coredns-589f44dc88-2s5xj                  1/1     Running   1 (10m ago)   24m
+kube-system   coredns-589f44dc88-42qq7                  1/1     Running   1 (10m ago)   24m
+kube-system   etcd-choimory-server                      1/1     Running   1 (10m ago)   24m
+kube-system   kube-apiserver-choimory-server            1/1     Running   1 (10m ago)   24m
+kube-system   kube-controller-manager-choimory-server   1/1     Running   1 (10m ago)   24m
+kube-system   kube-proxy-8dsgf                          1/1     Running   1 (10m ago)   24m
+kube-system   kube-scheduler-choimory-server            1/1     Running   1 (10m ago)   24m
+choimory@choimory-server:~$ diff <(docker ps --format '{{.Names}}' | sort) <(cut -d: -f1 ~/docker-before.txt | sort)
+choimory@choimory-server:~$ 
+```
+
+- 재부팅 복구 확인
+- 확인: `swapon --show`와 `diff`는 출력이 없고, 서비스 4개는 `active`, 노드는 `Ready`
+- 재부팅 직후에는 노드가 `Ready`로 돌아오기까지 1~2분 걸릴 수 있음
+
+---
