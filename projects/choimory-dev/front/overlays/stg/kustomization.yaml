@@ -1,0 +1,39 @@
+# stg 환경 front
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-dev-stg
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/choimory/choimory-dev-front
+    newTag: stg-bootstrap
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: front
+      spec:
+        template:
+          spec:
+            containers:
+              - name: front
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 96Mi
+                  limits:
+                    memory: 192Mi
+  - patch: |-
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      metadata:
+        name: front
+      spec:
+        # stg 페이지 도메인. 내부 이름은 stg, 도메인만 staging을 쓴다.
+        hostnames:
+          - staging.choimory.dev

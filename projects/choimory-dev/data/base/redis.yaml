@@ -1,0 +1,68 @@
+# member-api가 접속하는 Redis 주소
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+# Refresh Token과 Access Token 블랙리스트를 저장하는 Redis
+# 실행 옵션은 AOF 사용 여부가 다른 환경별 overlay에서 지정한다.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:8.10.3-alpine
+          ports:
+            - name: redis
+              containerPort: 6379
+          env:
+            # 6단계에서 SealedSecret으로 생성하는 Secret
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          startupProbe:
+            tcpSocket:
+              port: redis
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            tcpSocket:
+              port: redis
+          readinessProbe:
+            tcpSocket:
+              port: redis
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        # 데이터가 /data/dev/choimory-dev/k8s/<네임스페이스>/data-redis-0/ 에 저장된다.
+        storageClassName: local-path-choimory-dev
+        resources:
+          requests:
+            storage: 1Gi

@@ -1,0 +1,16 @@
+# 같은 네임스페이스와 infrastructure에서 오는 요청만 허용해 stg와 prod 사이의 통신을 차단한다.
+# infrastructure 허용은 Envoy 프록시의 앱 호출과 CloudNativePG 오퍼레이터의 DB 상태 확인에 필요하다.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace-and-infrastructure
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: infrastructure

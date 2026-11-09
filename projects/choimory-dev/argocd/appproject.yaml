@@ -1,0 +1,17 @@
+# choimory-dev 프로젝트의 배포 범위
+# 이 프로젝트의 Application은 choimory-dev-* 네임스페이스에만 배포할 수 있다.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: choimory-dev
+  namespace: infrastructure
+spec:
+  sourceRepos:
+    - https://github.com/choimory/choimory-gitops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: choimory-dev-*
+  # 클러스터 단위 리소스는 프로젝트 Namespace만 허용한다.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace

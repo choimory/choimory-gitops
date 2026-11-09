@@ -1,0 +1,8 @@
+# 실제 이름은 각 overlay의 namespace 설정으로 정해진다.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: choimory-dev
+  labels:
+    # infrastructure/gateway의 공용 Gateway가 이 라벨로 HTTPRoute 연결을 허용한다.
+    gateway-access: "true"

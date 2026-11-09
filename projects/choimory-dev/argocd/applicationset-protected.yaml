@@ -1,0 +1,47 @@
+# 네임스페이스와 데이터 배포. 삭제되면 DB와 Redis 데이터가 사라지는 구성 요소만 모은다.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: choimory-dev-protected
+  namespace: infrastructure
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  # 주의: ApplicationSet이나 Application이 삭제되어도 클러스터의 리소스는 지우지 않는다.
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - env: stg
+                - env: prod
+          - list:
+              elements:
+                - component: namespaces
+                - component: data
+  template:
+    metadata:
+      name: choimory-dev-{{ .env }}-{{ .component }}
+    spec:
+      project: choimory-dev
+      source:
+        repoURL: https://github.com/choimory/choimory-gitops.git
+        targetRevision: main
+        path: projects/choimory-dev/{{ .component }}/overlays/{{ .env }}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: choimory-dev-{{ .env }}
+      syncPolicy:
+        automated:
+          # 주의: 매니페스트를 실수로 지워도 DB가 삭제되지 않도록 끈다. 정말 삭제할 때는 직접 지운다.
+          prune: false
+          selfHeal: true
+        retry:
+          limit: 10
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 5m

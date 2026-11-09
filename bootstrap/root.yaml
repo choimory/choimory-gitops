@@ -1,0 +1,22 @@
+# 클러스터의 시작점이 되는 root Application
+# ArgoCD를 Helm으로 설치한 뒤 이 파일만 한 번 kubectl apply 하면, 이후 구성은 ArgoCD가 Git을 보고 설치한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: infrastructure
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/choimory/choimory-gitops.git
+    # 주의: 앱 레포 Actions도 main에 태그를 커밋하므로 ArgoCD가 보는 브랜치를 바꾸면 배포가 끊긴다.
+    targetRevision: main
+    path: infrastructure/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infrastructure
+  syncPolicy:
+    automated:
+      # infrastructure/apps에서 파일을 지우면 해당 Application도 정리한다.
+      prune: true
+      selfHeal: true

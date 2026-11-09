@@ -1,0 +1,12 @@
+# HTTPRoute와 front 서버가 member-api를 호출하는 내부 주소
+apiVersion: v1
+kind: Service
+metadata:
+  name: member-api
+spec:
+  selector:
+    app: member-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

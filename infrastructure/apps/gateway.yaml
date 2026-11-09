@@ -1,0 +1,21 @@
+# 모든 프로젝트가 HTTPRoute를 붙이는 공용 Gateway
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway
+  namespace: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/choimory/choimory-gitops.git
+    targetRevision: main
+    path: infrastructure/gateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infrastructure
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

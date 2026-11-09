@@ -1,0 +1,31 @@
+# PostgreSQL을 관리하는 CloudNativePG 오퍼레이터
+# 오퍼레이터만 공용으로 두고, DB 인스턴스는 각 프로젝트의 data 디렉토리에서 만든다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudnative-pg
+  namespace: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  sources:
+    - repoURL: https://cloudnative-pg.github.io/charts
+      chart: cloudnative-pg
+      targetRevision: 0.29.1
+      helm:
+        valueFiles:
+          - $values/infrastructure/cloudnative-pg/values.yaml
+    - repoURL: https://github.com/choimory/choimory-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infrastructure
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # CloudNativePG CRD는 크기가 커서 일반 apply의 annotation 제한에 걸린다.
+      - ServerSideApply=true

@@ -1,0 +1,16 @@
+# Cilium 1.20.4 Helm values
+# 노드 Ready와 ArgoCD 설치에 CNI가 먼저 필요하므로 ArgoCD 대상이 아니며 서버에서 직접 설치한다.
+ipam:
+  # kubeadm-config.yaml의 podSubnet(10.244.0.0/16)을 사용한다.
+  mode: kubernetes
+operator:
+  # 노드가 1대라 레플리카 1개로 충분하다.
+  replicas: 1
+# 메모리를 아끼기 위해 끈다.
+hubble:
+  enabled: false
+# Gateway는 Envoy Gateway(infrastructure/envoy-gateway)를 사용하므로 Cilium 기능은 끈다.
+gatewayAPI:
+  enabled: false
+ingressController:
+  enabled: false

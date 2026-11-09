@@ -1,0 +1,54 @@
+# Envoy 프록시 실행 방식
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: envoy-proxy
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        # kubeadm에는 LoadBalancer가 없어 기본값을 쓰면 ArgoCD에서 계속 Progressing으로 표시된다.
+        # 외부 접속은 2차 작업의 cloudflared가 클러스터 내부에서 이 Service로 연결한다.
+        type: ClusterIP
+      envoyDeployment:
+        replicas: 1
+        container:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+---
+# Envoy Gateway가 처리할 Gateway 종류
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: envoy-proxy
+    namespace: infrastructure
+---
+# 모든 프로젝트가 같이 쓰는 입구
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: shared-gateway
+spec:
+  gatewayClassName: envoy
+  listeners:
+    # TLS는 앞단의 Cloudflare에서 처리하므로 HTTP만 받는다.
+    # *.choimory.dev는 choimory.dev에 매칭되지 않아 hostname을 두지 않고 HTTPRoute에서 도메인을 지정한다.
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        # gateway-access 라벨이 있는 프로젝트 네임스페이스의 HTTPRoute만 허용한다.
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"

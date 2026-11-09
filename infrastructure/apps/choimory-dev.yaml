@@ -1,0 +1,23 @@
+# choimory-dev 프로젝트의 ArgoCD 등록 정보 (AppProject, ApplicationSet)
+# 공용 도구의 CRD와 StorageClass가 필요하므로 마지막 wave에 설치한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: choimory-dev
+  namespace: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/choimory/choimory-gitops.git
+    targetRevision: main
+    path: projects/choimory-dev/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infrastructure
+  syncPolicy:
+    automated:
+      # 주의: ApplicationSet이 지워져도 DB가 삭제되지 않도록 prune을 끈다.
+      prune: false
+      selfHeal: true
