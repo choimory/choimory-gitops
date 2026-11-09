@@ -1,0 +1,22 @@
+# PVC 요청에 맞춰 서버 디스크에 폴더를 만들어 주는 스토리지 도구
+# DB와 Redis가 PVC를 쓰므로 프로젝트보다 먼저 설치한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: local-path-provisioner
+  namespace: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/choimory/choimory-gitops.git
+    targetRevision: main
+    path: infrastructure/local-path-provisioner
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infrastructure
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

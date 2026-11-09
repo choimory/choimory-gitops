@@ -1,0 +1,3 @@
+# kubeseal의 기본 컨트롤러 이름에 맞춘다.
+# 네임스페이스가 기본값과 달라 kubeseal 실행 시 --controller-namespace infrastructure가 필요하다.
+fullnameOverride: sealed-secrets-controller

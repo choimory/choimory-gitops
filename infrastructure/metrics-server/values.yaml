@@ -1,0 +1,4 @@
+# kubeadm 기본 kubelet 인증서는 자체 서명이라 검증을 건너뛴다.
+# 노드 1대의 클러스터 내부 통신에만 적용된다.
+args:
+  - --kubelet-insecure-tls

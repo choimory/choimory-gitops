@@ -1,0 +1,51 @@
+# stg 환경 PostgreSQL과 Redis. 운영보다 적은 자원을 사용한다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-dev-stg
+
+resources:
+  - ../../base
+
+patches:
+  - patch: |-
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: choimory-dev-pg
+      spec:
+        postgresql:
+          parameters:
+            shared_buffers: 32MB
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: redis
+      spec:
+        template:
+          spec:
+            containers:
+              - name: redis
+                # stg는 재시작 시 토큰이 사라져도 되므로 AOF와 스냅샷을 끈다.
+                args:
+                  - --requirepass
+                  - $(REDIS_PASSWORD)
+                  - --appendonly
+                  - "no"
+                  - --save
+                  - ""
+                  - --maxmemory
+                  - 32mb
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 16Mi
+                  limits:
+                    memory: 64Mi

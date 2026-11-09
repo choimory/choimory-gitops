@@ -1,0 +1,18 @@
+# stg 환경 네임스페이스
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-dev-stg
+
+resources:
+  - ../../base
+
+patches:
+  # Pod 상한 합계 약 1.0Gi에 롤링 업데이트 여유를 더한 값
+  - target:
+      kind: ResourceQuota
+      name: memory-quota
+    patch: |-
+      - op: replace
+        path: /spec/hard/limits.memory
+        value: 2Gi

@@ -1,0 +1,24 @@
+# API 도메인의 /member 경로를 member-api로 전달한다. 도메인은 환경별 overlay에서 지정한다.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: member-api
+spec:
+  parentRefs:
+    - name: shared-gateway
+      namespace: infrastructure
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /member
+      # 앱 코드는 /member 접두어를 모르므로 떼고 전달한다.
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: member-api
+          port: 8080

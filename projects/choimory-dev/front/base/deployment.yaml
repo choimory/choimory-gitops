@@ -1,0 +1,39 @@
+# Next.js 프론트 서버
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front
+  template:
+    metadata:
+      labels:
+        app: front
+    spec:
+      containers:
+        - name: front
+          # 태그는 앱 레포 Actions가 overlay의 images 항목을 수정해 변경한다.
+          # 브라우저가 호출할 API 주소는 빌드 시 이미지에 고정되어 환경별로 이미지가 다르다.
+          image: ghcr.io/choimory/choimory-dev-front
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            # Next 서버(Route Handler)가 클러스터 내부로 member-api를 호출하는 주소
+            - name: MEMBER_API_BASE_URL
+              value: http://member-api:8080
+          # 페이지 렌더링이 member-api 상태에 영향받지 않도록 TCP로 확인한다.
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http

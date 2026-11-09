@@ -1,0 +1,54 @@
+# local-path-provisioner 공식 배포 파일을 infrastructure 네임스페이스에 설치한다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: infrastructure
+
+resources:
+  - https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.37/deploy/local-path-storage.yaml
+  - storageclasses.yaml
+
+patches:
+  # 공용 네임스페이스를 쓰므로 공식 파일의 전용 Namespace는 만들지 않는다.
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: local-path-storage
+  # 공식 StorageClass를 공용 저장 규칙으로 사용한다. 데이터가 /data/dev/choimory/k8s 아래에 쌓인다.
+  - patch: |-
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: local-path
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "true"
+      parameters:
+        # 폴더를 <네임스페이스>/<PVC 이름>/ 형태로 만든다. 끝의 /는 provisioner 검증에 필요하다.
+        pathPattern: "{{ .PVC.Namespace }}/{{ .PVC.Name }}/"
+      # PVC를 지워도 데이터 폴더를 남긴다.
+      reclaimPolicy: Retain
+  # StorageClass별 저장 경로. storageClassConfigs를 쓰면 최상위 nodePathMap은 비워야 한다.
+  - target:
+      kind: ConfigMap
+      name: local-path-config
+    patch: |-
+      - op: replace
+        path: /data/config.json
+        value: |-
+          {
+            "nodePathMap": [],
+            "storageClassConfigs": {
+              "local-path": {
+                "nodePathMap": [
+                  { "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES", "paths": ["/data/dev/choimory/k8s"] }
+                ]
+              },
+              "local-path-choimory-dev": {
+                "nodePathMap": [
+                  { "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES", "paths": ["/data/dev/choimory-dev/k8s"] }
+                ]
+              }
+            }
+          }

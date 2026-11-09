@@ -1,0 +1,42 @@
+# kubeadm init으로 클러스터를 처음 만들거나 재설치할 때 쓰는 설정
+# ArgoCD 대상이 아니며 서버에서 직접 사용한다. 실행 절차는 histories의 k8s-setup/plan7.md 참고.
+# 주의: 레포가 public이므로 <TS_NET_NAME>, <TAILSCALE_IP>는 서버에 복사한 파일에서만 실제 값으로 바꾸고 커밋하지 않는다.
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+nodeRegistration:
+  # Docker가 설치한 containerd를 k8s와 공유한다. CRI 플러그인을 켜 둬야 한다.
+  criSocket: unix:///run/containerd/containerd.sock
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+# Cilium 1.20의 지원 범위가 1.36까지라서 최신 1.37을 쓰지 않는다.
+kubernetesVersion: v1.36.6
+networking:
+  # Docker(172.x), LAN(192.168.10.0/24), Tailscale(100.64.0.0/10)과 겹치지 않는 대역
+  # 주의: 클러스터 생성 후에는 변경하기 어렵다.
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
+apiServer:
+  # Mac의 kubectl이 Tailscale로 접속할 때 인증서 검증을 통과하도록 서버 이름을 포함한다.
+  certSANs:
+    - choimory-server
+    - <TS_NET_NAME>
+    - <TAILSCALE_IP>
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# containerd의 SystemdCgroup = true와 일치해야 한다.
+cgroupDriver: systemd
+# 같은 서버의 Docker 앱(Immich, Jellyfin 등)과 OS가 쓸 자원을 k8s 할당량에서 제외한다.
+systemReserved:
+  memory: 10Gi
+  cpu: "2"
+kubeReserved:
+  memory: 1Gi
+  cpu: 500m
+# 주의: 디스크를 미디어 데이터와 공유하므로 사용률 85%부터 이미지 정리와 Pod 축출이 일어날 수 있다.
+evictionHard:
+  memory.available: 500Mi
+  nodefs.available: 10%
+  nodefs.inodesFree: 5%
+  imagefs.available: 15%

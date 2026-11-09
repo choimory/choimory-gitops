@@ -1,0 +1,38 @@
+# prod 환경 front
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-dev-prod
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/choimory/choimory-dev-front
+    newTag: prod-bootstrap
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: front
+      spec:
+        template:
+          spec:
+            containers:
+              - name: front
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 128Mi
+                  limits:
+                    memory: 256Mi
+  - patch: |-
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      metadata:
+        name: front
+      spec:
+        hostnames:
+          - choimory.dev

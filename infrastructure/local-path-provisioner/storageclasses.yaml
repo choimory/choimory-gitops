@@ -1,0 +1,12 @@
+# choimory-dev 프로젝트 저장 규칙. 데이터가 /data/dev/choimory-dev/k8s 아래에 쌓인다.
+# 프로젝트를 추가할 때 StorageClass와 kustomization.yaml의 storageClassConfigs 항목을 함께 추가한다.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path-choimory-dev
+provisioner: rancher.io/local-path
+parameters:
+  pathPattern: "{{ .PVC.Namespace }}/{{ .PVC.Name }}/"
+volumeBindingMode: WaitForFirstConsumer
+# 주의: 프로젝트 DB와 Redis 데이터가 저장되므로 Delete로 바꾸면 PVC 삭제 시 데이터도 삭제된다.
+reclaimPolicy: Retain

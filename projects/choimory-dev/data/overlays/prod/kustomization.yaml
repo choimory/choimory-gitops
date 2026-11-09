@@ -1,0 +1,54 @@
+# prod 환경 PostgreSQL과 Redis
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-dev-prod
+
+resources:
+  - ../../base
+
+patches:
+  - patch: |-
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: choimory-dev-pg
+      spec:
+        postgresql:
+          parameters:
+            shared_buffers: 128MB
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        # 주의: local-path는 크기를 실제로 제한하지 않으며 표시용 값이다.
+        storage:
+          size: 10Gi
+  - patch: |-
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: redis
+      spec:
+        template:
+          spec:
+            containers:
+              - name: redis
+                # 재시작해도 사용자가 로그아웃되지 않도록 prod는 AOF를 켠다.
+                args:
+                  - --requirepass
+                  - $(REDIS_PASSWORD)
+                  - --appendonly
+                  - "yes"
+                  - --appendfsync
+                  - everysec
+                  - --maxmemory
+                  - 100mb
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 32Mi
+                  limits:
+                    memory: 128Mi

@@ -1,0 +1,43 @@
+# stg 환경 member-api
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-dev-stg
+
+resources:
+  - ../../base
+
+images:
+  - name: ghcr.io/choimory/choimory-dev-member-api
+    newTag: stg-bootstrap
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: member-api
+      spec:
+        template:
+          spec:
+            containers:
+              - name: member-api
+                env:
+                  # member-api의 application-stg.yml을 사용한다.
+                  - name: SPRING_PROFILES_ACTIVE
+                    value: stg
+                resources:
+                  requests:
+                    cpu: 100m
+                    memory: 256Mi
+                  limits:
+                    memory: 512Mi
+  - patch: |-
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      metadata:
+        name: member-api
+      spec:
+        # stg API 도메인. 내부 이름은 stg, 도메인만 staging을 쓴다.
+        hostnames:
+          - staging-api.choimory.dev

@@ -1,0 +1,27 @@
+# ArgoCD Helm 설정. 최초 helm install과 ArgoCD 자체 관리 Application이 같은 파일을 사용한다.
+
+# SSO와 알림을 쓰지 않아 메모리를 줄이기 위해 끈다.
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+configs:
+  cm:
+    # ArgoCD는 기본적으로 자식 Application의 Health를 기다리지 않는다.
+    # infrastructure/apps의 sync wave 순서가 지켜지도록 Health 판단을 추가한다.
+    # 주의: 삭제하면 CRD 설치가 끝나기 전에 다음 wave가 실행될 수 있다.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs

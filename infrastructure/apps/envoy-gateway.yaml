@@ -1,0 +1,32 @@
+# Gateway API를 구현하는 Envoy Gateway 컨트롤러
+# 공용 Gateway 리소스는 CRD가 필요하므로 다음 wave의 gateway Application에서 만든다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: envoy-gateway
+  namespace: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  sources:
+    # OCI 차트는 repoURL에 oci:// 접두어를 붙이지 않는다.
+    - repoURL: registry-1.docker.io/envoyproxy
+      chart: gateway-helm
+      targetRevision: v1.10.0
+      helm:
+        valueFiles:
+          - $values/infrastructure/envoy-gateway/values.yaml
+    - repoURL: https://github.com/choimory/choimory-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infrastructure
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # Gateway API와 Envoy Gateway CRD는 크기가 커서 일반 apply의 annotation 제한에 걸린다.
+      - ServerSideApply=true

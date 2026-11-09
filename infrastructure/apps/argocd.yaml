@@ -1,0 +1,32 @@
+# ArgoCD 자체 관리
+# 최초 설치는 Helm으로 수동 진행하고, 이후 버전과 설정 변경은 Git으로 반영한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  sources:
+    # 주의: 최초 helm install의 릴리스 이름도 argocd여야 같은 리소스로 인식한다.
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.17.0
+      helm:
+        valueFiles:
+          - $values/infrastructure/argocd/values.yaml
+    - repoURL: https://github.com/choimory/choimory-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: infrastructure
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # ArgoCD CRD는 크기가 커서 일반 apply의 annotation 제한에 걸린다.
+      - ServerSideApply=true
