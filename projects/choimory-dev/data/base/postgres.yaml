@@ -1,10 +1,10 @@
 # CloudNativePG가 관리하는 PostgreSQL. 저장 크기와 메모리는 환경별 overlay에서 지정한다.
-# member-api는 자동 생성되는 choimory-dev-pg-app Secret과 choimory-dev-pg-rw Service로 접속한다.
+# member-api는 자동 생성되는 choimory-dev-postgres-app Secret과 choimory-dev-postgres-rw Service로 접속한다.
 # 주의: 삭제하면 DB Pod와 PVC가 함께 삭제된다. 데이터 폴더는 Retain으로 남지만 복구는 수동이다.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: choimory-dev-pg
+  name: choimory-dev-postgres
 spec:
   # 노드가 1대라 복제본을 두어도 장애 대비가 되지 않는다.
   instances: 1

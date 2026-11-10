@@ -3,6 +3,9 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
   name: envoy-proxy
+  annotations:
+    # GatewayClass가 참조하므로 먼저 만들어야 한다. 같이 만들면 GatewayClass가 Accepted False로 남는다.
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   provider:
     type: Kubernetes

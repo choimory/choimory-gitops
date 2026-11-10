@@ -2,19 +2,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: member-api
+  name: choimory-dev-member-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: member-api
+      app: choimory-dev-member-api
   template:
     metadata:
       labels:
-        app: member-api
+        app: choimory-dev-member-api
     spec:
       containers:
-        - name: member-api
+        - name: choimory-dev-member-api
           # 태그는 앱 레포 Actions가 overlay의 images 항목을 수정해 변경한다.
           image: ghcr.io/choimory/choimory-dev-member-api
           ports:
@@ -31,31 +31,31 @@ spec:
             - name: rdb-host
               valueFrom:
                 secretKeyRef:
-                  name: choimory-dev-pg-app
+                  name: choimory-dev-postgres-app
                   key: host
             - name: rdb-port
               valueFrom:
                 secretKeyRef:
-                  name: choimory-dev-pg-app
+                  name: choimory-dev-postgres-app
                   key: port
             - name: rdb-database
               valueFrom:
                 secretKeyRef:
-                  name: choimory-dev-pg-app
+                  name: choimory-dev-postgres-app
                   key: dbname
             - name: rdb-user
               valueFrom:
                 secretKeyRef:
-                  name: choimory-dev-pg-app
+                  name: choimory-dev-postgres-app
                   key: user
             - name: rdb-password
               valueFrom:
                 secretKeyRef:
-                  name: choimory-dev-pg-app
+                  name: choimory-dev-postgres-app
                   key: password
             # 같은 네임스페이스의 data/base/redis.yaml Service로 접속한다.
             - name: redis-host
-              value: redis
+              value: choimory-dev-redis
             - name: redis-port
               value: "6379"
             # ACL을 쓰지 않아 비어 있지만, 앱 설정에 기본값이 없어 환경변수 자체는 필요하다.
@@ -65,12 +65,12 @@ spec:
             - name: redis-password
               valueFrom:
                 secretKeyRef:
-                  name: redis-secret
+                  name: choimory-dev-redis-secret
                   key: password
             - name: jwt-secret
               valueFrom:
                 secretKeyRef:
-                  name: member-api-secret
+                  name: choimory-dev-member-api-secret
                   key: jwt-secret
           # Spring Boot와 Flyway 기동 시간을 고려해 최대 3분까지 기다린다.
           startupProbe:
