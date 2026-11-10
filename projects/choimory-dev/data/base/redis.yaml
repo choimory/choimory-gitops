@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis
+  name: choimory-dev-redis
 spec:
   selector:
-    app: redis
+    app: choimory-dev-redis
   ports:
     - name: redis
       port: 6379
@@ -16,20 +16,20 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: redis
+  name: choimory-dev-redis
 spec:
-  serviceName: redis
+  serviceName: choimory-dev-redis
   replicas: 1
   selector:
     matchLabels:
-      app: redis
+      app: choimory-dev-redis
   template:
     metadata:
       labels:
-        app: redis
+        app: choimory-dev-redis
     spec:
       containers:
-        - name: redis
+        - name: choimory-dev-redis
           image: redis:8.10.3-alpine
           ports:
             - name: redis
@@ -39,7 +39,7 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: redis-secret
+                  name: choimory-dev-redis-secret
                   key: password
           volumeMounts:
             - name: data
@@ -61,7 +61,7 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
-        # 데이터가 /data/dev/choimory-dev/k8s/<네임스페이스>/data-redis-0/ 에 저장된다.
+        # 데이터가 /data/dev/choimory-dev/k8s/<네임스페이스>/data-choimory-dev-redis-0/ 에 저장된다.
         storageClassName: local-path-choimory-dev
         resources:
           requests:

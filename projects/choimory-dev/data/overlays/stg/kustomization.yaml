@@ -12,7 +12,7 @@ patches:
       apiVersion: postgresql.cnpg.io/v1
       kind: Cluster
       metadata:
-        name: choimory-dev-pg
+        name: choimory-dev-postgres
       spec:
         postgresql:
           parameters:
@@ -27,12 +27,12 @@ patches:
       apiVersion: apps/v1
       kind: StatefulSet
       metadata:
-        name: redis
+        name: choimory-dev-redis
       spec:
         template:
           spec:
             containers:
-              - name: redis
+              - name: choimory-dev-redis
                 # stg는 재시작 시 토큰이 사라져도 되므로 AOF와 스냅샷을 끈다.
                 args:
                   - --requirepass
