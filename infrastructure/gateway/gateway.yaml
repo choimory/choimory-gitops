@@ -33,7 +33,7 @@ spec:
     group: gateway.envoyproxy.io
     kind: EnvoyProxy
     name: envoy-proxy
-    namespace: infrastructure
+    namespace: choimory-infra
 ---
 # 모든 프로젝트가 같이 쓰는 입구
 apiVersion: gateway.networking.k8s.io/v1

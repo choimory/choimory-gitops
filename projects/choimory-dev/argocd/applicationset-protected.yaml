@@ -3,7 +3,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: choimory-dev-protected
-  namespace: infrastructure
+  namespace: choimory-infra
 spec:
   goTemplate: true
   goTemplateOptions:
