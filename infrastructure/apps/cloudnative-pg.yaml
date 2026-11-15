@@ -1,5 +1,5 @@
 # PostgreSQL을 관리하는 CloudNativePG 오퍼레이터
-# 오퍼레이터만 공용으로 두고, DB 인스턴스는 각 프로젝트의 data 디렉토리에서 만든다.
+# 오퍼레이터만 공용으로 두고, DB 인스턴스는 각 프로젝트의 postgres 디렉토리에서 만든다.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

@@ -1,0 +1,6 @@
+# 프로젝트 환경별 Redis
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - redis.yaml

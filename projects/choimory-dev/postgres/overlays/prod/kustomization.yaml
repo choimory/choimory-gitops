@@ -1,0 +1,28 @@
+# prod 환경 PostgreSQL
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-dev-prod
+
+resources:
+  - ../../base
+
+patches:
+  - patch: |-
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: choimory-dev-postgres
+      spec:
+        postgresql:
+          parameters:
+            shared_buffers: 128MB
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        # 주의: local-path는 크기를 실제로 제한하지 않으며 표시용 값이다.
+        storage:
+          size: 10Gi

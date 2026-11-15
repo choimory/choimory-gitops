@@ -16,10 +16,13 @@ spec:
               elements:
                 - env: stg
                 - env: prod
+          # component는 Application 이름, dir은 projects/choimory-dev 아래 디렉토리 이름
           - list:
               elements:
                 - component: member-api
+                  dir: choimory-dev-member-api
                 - component: front
+                  dir: choimory-dev-front
   template:
     metadata:
       name: choimory-dev-{{ .env }}-{{ .component }}
@@ -28,7 +31,7 @@ spec:
       source:
         repoURL: https://github.com/choimory/choimory-gitops.git
         targetRevision: main
-        path: projects/choimory-dev/{{ .component }}/overlays/{{ .env }}
+        path: projects/choimory-dev/{{ .dir }}/overlays/{{ .env }}
       destination:
         server: https://kubernetes.default.svc
         namespace: choimory-dev-{{ .env }}
