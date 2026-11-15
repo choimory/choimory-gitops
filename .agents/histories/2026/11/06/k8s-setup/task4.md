@@ -186,8 +186,9 @@ kubeadm version -o short; helm version --short
 - 실제 값은 홈 디렉토리의 복사본에만 넣음
 
 ```bash
-git clone https://github.com/choimory/choimory-gitops.git ~/choimory-gitops
-cp ~/choimory-gitops/bootstrap/kubeadm-config.yaml ~/choimory-gitops/bootstrap/cilium-values.yaml ~/
+cd /data/dev/choimory/repo
+git clone https://github.com/choimory/choimory-gitops.git
+cp /data/dev/choimory/repo/choimory-gitops/bootstrap/kubeadm-config.yaml /data/dev/choimory/repo/choimory-gitops/bootstrap/cilium-values.yaml ~/
 sed -i 's/<TS_NET_NAME>/<실제_TS_NET_NAME>/; s/<TAILSCALE_IP>/<실제_TAILSCALE_IP>/' ~/kubeadm-config.yaml
 grep -A3 certSANs ~/kubeadm-config.yaml
 
@@ -360,7 +361,7 @@ immich_postgres: Up 6 days (healthy)
 immich_machine_learning: Up 6 days (healthy)
 immich_redis: Up 6 days (healthy)
 choimory@choimory-server:~$ ip route get 1.1.1.1
-1.1.1.1 via 192.168.10.1 dev enp4s0 src 192.168.10.201 uid 1000 
+1.1.1.1 via <GATEWAY_IP> dev enp4s0 src <SERVER_LAN_IP> uid 1000 
     cache 
 choimory@choimory-server:~$ tailscale status | head -3
 <TAILSCALE_IP>     choimory-server   choimory@  linux    idle; offers exit node     
@@ -761,15 +762,15 @@ choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sudo kubeadm i
 [preflight] You can also perform this action beforehand using 'kubeadm config images pull'[certs] Using certificateDir folder "/etc/kubernetes/pki"
 [certs] Generating "ca" certificate and key
 [certs] Generating "apiserver" certificate and key
-[certs] apiserver serving cert is signed for DNS names [choimory-server <TS_NET_NAME> kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 192.168.10.201 <TAILSCALE_IP>]
+[certs] apiserver serving cert is signed for DNS names [choimory-server <TS_NET_NAME> kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 <SERVER_LAN_IP> <TAILSCALE_IP>]
 [certs] Generating "apiserver-kubelet-client" certificate and key
 [certs] Generating "front-proxy-ca" certificate and key
 [certs] Generating "front-proxy-client" certificate and key
 [certs] Generating "etcd/ca" certificate and key
 [certs] Generating "etcd/server" certificate and key
-[certs] etcd/server serving cert is signed for DNS names [choimory-server localhost] and IPs [192.168.10.201 127.0.0.1 ::1]
+[certs] etcd/server serving cert is signed for DNS names [choimory-server localhost] and IPs [<SERVER_LAN_IP> 127.0.0.1 ::1]
 [certs] Generating "etcd/peer" certificate and key
-[certs] etcd/peer serving cert is signed for DNS names [choimory-server localhost] and IPs [192.168.10.201 127.0.0.1 ::1]
+[certs] etcd/peer serving cert is signed for DNS names [choimory-server localhost] and IPs [<SERVER_LAN_IP> 127.0.0.1 ::1]
 [certs] Generating "etcd/healthcheck-client" certificate and key
 [certs] Generating "apiserver-etcd-client" certificate and key
 [certs] Generating "sa" key and public key
@@ -793,7 +794,7 @@ choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ sudo kubeadm i
 [kubelet-check] Waiting for a healthy kubelet at http://127.0.0.1:10248/healthz. This can take up to 4m0s
 [kubelet-check] The kubelet is healthy after 431.654µs
 [control-plane-check] Waiting for healthy control plane components. This can take up to 4m0s
-[control-plane-check] Checking kube-apiserver at https://192.168.10.201:6443/livez
+[control-plane-check] Checking kube-apiserver at https://<SERVER_LAN_IP>:6443/livez
 [control-plane-check] Checking kube-controller-manager at https://127.0.0.1:10257/healthz
 [control-plane-check] Checking kube-scheduler at https://127.0.0.1:10259/livez
 [control-plane-check] kube-controller-manager is healthy after 2.261038ms
@@ -834,7 +835,7 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join 192.168.10.201:6443 --token <BOOTSTRAP_TOKEN> \
+kubeadm join <SERVER_LAN_IP>:6443 --token <BOOTSTRAP_TOKEN> \
         --discovery-token-ca-cert-hash sha256:<CA_CERT_HASH> 
 choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
 ```
@@ -893,7 +894,7 @@ Waiting for daemon set "cilium" rollout to finish: 0 of 1 updated pods are avail
 daemon set "cilium" successfully rolled out
 choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl get nodes -o wide
 NAME              STATUS   ROLES           AGE   VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION             CONTAINER-RUNTIME
-choimory-server   Ready    control-plane   11m   v1.36.6   192.168.10.201   <none>        Ubuntu 26.04.1 LTS   7.0.0-42-generic (amd64)   containerd://2.4.2
+choimory-server   Ready    control-plane   11m   v1.36.6   <SERVER_LAN_IP>   <none>        Ubuntu 26.04.1 LTS   7.0.0-42-generic (amd64)   containerd://2.4.2
 choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ kubectl get pods -A
 NAMESPACE     NAME                                      READY   STATUS    RESTARTS   AGE
 kube-system   cilium-envoy-f852f                        1/1     Running   0          88s

@@ -53,7 +53,7 @@ spec:
                 secretKeyRef:
                   name: choimory-dev-postgres-app
                   key: password
-            # 같은 네임스페이스의 data/base/redis.yaml Service로 접속한다.
+            # 같은 네임스페이스의 redis/base/redis.yaml Service로 접속한다.
             - name: redis-host
               value: choimory-dev-redis
             - name: redis-port
