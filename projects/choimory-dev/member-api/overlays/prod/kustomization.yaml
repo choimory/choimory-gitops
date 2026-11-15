@@ -6,6 +6,7 @@ namespace: choimory-dev-prod
 
 resources:
   - ../../base
+  - choimory-dev-member-api-secret.yaml
 
 images:
   - name: ghcr.io/choimory/choimory-dev-member-api

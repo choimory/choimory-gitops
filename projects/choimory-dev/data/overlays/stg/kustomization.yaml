@@ -6,6 +6,7 @@ namespace: choimory-dev-stg
 
 resources:
   - ../../base
+  - choimory-dev-redis-secret.yaml
 
 patches:
   - patch: |-
