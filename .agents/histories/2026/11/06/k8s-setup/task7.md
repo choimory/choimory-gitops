@@ -36,6 +36,12 @@
   - [등록 결과](#등록-결과)
   - [이전 안내와 달라진 점](#이전-안내와-달라진-점)
   - [다음 진행](#다음-진행)
+- [API 도메인 변경](#api-도메인-변경)
+  - [답변](#답변-6)
+  - [변경 내용](#변경-내용)
+  - [검증](#검증-1)
+  - [커밋과 반영 (직접)](#커밋과-반영-직접)
+  - [gitops 반영 후 확인 명령어 (서버)](#gitops-반영-후-확인-명령어-서버)
 
 ---
 
@@ -370,3 +376,59 @@ rm ./choimory-dev-member-api-deploy ./choimory-dev-member-api-deploy.pub ./choim
    - front `deploy.yml` 97줄 주석 수정
 2. gitops 커밋, `main` 반영 (직접)
 3. 앱 레포 2개 커밋, `stg`와 `main` 머지 (직접). `deploy.yml`이 `main`에 있어야 Run workflow 버튼이 보임
+
+---
+
+# API 도메인 변경
+
+> 시작
+
+## 답변
+
+- [plan9.md 다음 작업](./plan9.md#다음-작업-api-도메인-변경과-7단계-진행)의 1번(API 도메인 변경)을 진행함
+- 커밋은 하지 않음
+
+## 변경 내용
+
+| 위치 | 변경 |
+|---|---|
+| gitops `choimory-dev-member-api/base/httproute.yaml` | `/member` 경로 매칭과 URLRewrite 삭제. 경로를 지정하지 않아 모든 경로가 member-api 8080으로 그대로 전달됨. 상단 주석 수정 |
+| gitops `overlays/stg/kustomization.yaml` | hostname을 `staging-member-api.choimory.dev`로 변경, 주석 수정 |
+| gitops `overlays/prod/kustomization.yaml` | hostname을 `member-api.choimory.dev`로 변경 |
+| front `deploy.yml` 97줄 | 주석의 주소 예시를 새 도메인으로 수정 |
+
+## 검증
+
+- `kubectl kustomize`로 stg, prod overlay를 빌드함
+- 변경 전(HEAD)과 비교한 차이는 HTTPRoute 두 군데뿐
+  - hostname 변경
+  - `/member` 매칭과 URLRewrite 삭제
+  - Deployment, Service, SealedSecret은 그대로
+- gitops와 앱 레포 2개의 매니페스트, 워크플로에 옛 도메인(`staging-api`, `api.choimory.dev`)이 남아 있지 않음
+- front `deploy.yml`을 actionlint로 다시 검사했으며 오류 없음
+
+## 커밋과 반영 (직접)
+
+- gitops
+  - 커밋할 것: HTTPRoute 관련 3개 파일, 문서 2개(plan9, task7)
+  - 커밋 후 `main`에 반영. member-api가 아직 떠 있지 않아 영향 없음
+- 앱 레포 2개
+
+| 레포 | 커밋할 것 |
+|---|---|
+| `choimory-dev-front` | `deploy.yml` (수동 실행, gitops 경로, 주석) |
+| `choimory-dev-member-api` | `deploy.yml` (수동 실행, gitops 경로) |
+
+- 커밋 후 `dev` push, `stg` 머지, `main` 머지 순서로 진행
+- `dev`에 push 안 된 커밋도 함께 올라감 (front 1개, member-api 3개)
+- push하면 test job만 자동으로 돎. 테스트 결과를 먼저 확인
+
+## gitops 반영 후 확인 명령어 (서버)
+
+```bash
+kubectl -n choimory-dev-stg get httproute choimory-dev-member-api -o jsonpath='{.spec.hostnames}{"\n"}'
+kubectl -n choimory-dev-prod get httproute choimory-dev-member-api -o jsonpath='{.spec.hostnames}{"\n"}'
+```
+
+- 각각 `["staging-member-api.choimory.dev"]`, `["member-api.choimory.dev"]`가 나오면 정상
+- 다음은 Actions에서 `stg` 브랜치로 Run workflow 실행
