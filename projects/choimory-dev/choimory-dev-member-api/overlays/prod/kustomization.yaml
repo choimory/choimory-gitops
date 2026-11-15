@@ -40,4 +40,4 @@ patches:
         name: choimory-dev-member-api
       spec:
         hostnames:
-          - api.choimory.dev
+          - member-api.choimory.dev
