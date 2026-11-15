@@ -42,6 +42,11 @@
   - [검증](#검증-1)
   - [커밋과 반영 (직접)](#커밋과-반영-직접)
   - [gitops 반영 후 확인 명령어 (서버)](#gitops-반영-후-확인-명령어-서버)
+- [API 도메인 변경 main 반영](#api-도메인-변경-main-반영)
+  - [답변](#답변-7)
+  - [1. HTTPRoute 반영 확인 (서버, 선택)](#1-httproute-반영-확인-서버-선택)
+  - [2. 앱 레포 커밋과 머지 (직접)](#2-앱-레포-커밋과-머지-직접)
+  - [push 후 확인할 것](#push-후-확인할-것)
 
 ---
 
@@ -432,3 +437,49 @@ kubectl -n choimory-dev-prod get httproute choimory-dev-member-api -o jsonpath='
 
 - 각각 `["staging-member-api.choimory.dev"]`, `["member-api.choimory.dev"]`가 나오면 정상
 - 다음은 Actions에서 `stg` 브랜치로 Run workflow 실행
+
+---
+
+# API 도메인 변경 main 반영
+
+> gitops 메인브랜치 push 했음 이제 ?
+
+## 답변
+
+- gitops 반영을 확인함
+  - `origin/main`: `f53b233` (Merge branch 'release/1.0.4')
+  - prod hostname이 `member-api.choimory.dev`로 바뀜
+- 다음은 HTTPRoute 반영 확인(선택)과 앱 레포 커밋, 머지
+
+## 1. HTTPRoute 반영 확인 (서버, 선택)
+
+- 1~3분 뒤 실행. member-api가 아직 떠 있지 않으므로 건너뛰어도 됨
+
+```bash
+kubectl -n choimory-dev-stg get httproute choimory-dev-member-api -o jsonpath='{.spec.hostnames}{"\n"}'
+kubectl -n choimory-dev-prod get httproute choimory-dev-member-api -o jsonpath='{.spec.hostnames}{"\n"}'
+```
+
+- `["staging-member-api.choimory.dev"]`, `["member-api.choimory.dev"]`가 나오면 정상
+
+## 2. 앱 레포 커밋과 머지 (직접)
+
+- 두 레포 모두 `dev`에 `deploy.yml` 수정이 커밋되지 않은 상태
+
+| 레포 | 커밋할 것 | `dev`에 push 안 된 커밋 |
+|---|---|---|
+| `choimory-dev-front` | `deploy.yml` | 1개 (`chore: github actions CI 추가`) |
+| `choimory-dev-member-api` | `deploy.yml` | 3개 (Dockerfile·stg 프로필, CI 추가, actuator 추가) |
+
+- 순서
+  1. `deploy.yml` 커밋 후 `dev` push
+  2. 평소 방식(release 브랜치)대로 `stg`, `main`에 머지하고 push
+- 머지 충돌은 없을 것으로 판단
+  - `stg`는 `dev`보다 뒤처져 있기만 함
+  - `main`에만 있는 커밋은 release 머지 커밋뿐이며 코드 변경 없음
+
+## push 후 확인할 것
+
+- 두 레포 Actions 탭에서 push 때마다 deploy 워크플로가 돌고, test job만 성공하고 deploy job은 skipped면 정상
+- `main`까지 머지하면 deploy 워크플로 화면에 Run workflow 버튼이 생김
+- 테스트 결과 확인 후 `stg` 브랜치로 Run workflow 실행

@@ -4,7 +4,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: root
-  namespace: infrastructure
+  namespace: choimory-infra
 spec:
   project: default
   source:
@@ -14,7 +14,7 @@ spec:
     path: infrastructure/apps
   destination:
     server: https://kubernetes.default.svc
-    namespace: infrastructure
+    namespace: choimory-infra
   syncPolicy:
     automated:
       # infrastructure/apps에서 파일을 지우면 해당 Application도 정리한다.

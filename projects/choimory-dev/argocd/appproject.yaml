@@ -4,7 +4,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: choimory-dev
-  namespace: infrastructure
+  namespace: choimory-infra
 spec:
   sourceRepos:
     - https://github.com/choimory/choimory-gitops.git

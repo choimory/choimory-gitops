@@ -4,7 +4,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: local-path-provisioner
-  namespace: infrastructure
+  namespace: choimory-infra
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
@@ -15,7 +15,7 @@ spec:
     path: infrastructure/local-path-provisioner
   destination:
     server: https://kubernetes.default.svc
-    namespace: infrastructure
+    namespace: choimory-infra
   syncPolicy:
     automated:
       prune: true

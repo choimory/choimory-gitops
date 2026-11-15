@@ -4,7 +4,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: choimory-dev
-  namespace: infrastructure
+  namespace: choimory-infra
   annotations:
     argocd.argoproj.io/sync-wave: "7"
 spec:
@@ -15,7 +15,7 @@ spec:
     path: projects/choimory-dev/argocd
   destination:
     server: https://kubernetes.default.svc
-    namespace: infrastructure
+    namespace: choimory-infra
   syncPolicy:
     automated:
       # 주의: ApplicationSet이 지워져도 DB가 삭제되지 않도록 prune을 끈다.
