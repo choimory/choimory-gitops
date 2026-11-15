@@ -39,6 +39,41 @@
   - [3번: gitops 커밋과 main 반영 (직접)](#3번-gitops-커밋과-main-반영-직접)
   - [4번: choimory-infra에 재설치 (서버)](#4번-choimory-infra에-재설치-서버)
   - [4-5 이후](#4-5-이후)
+- [재설치 결과와 5번 확인](#재설치-결과와-5번-확인)
+  - [답변](#답변-7)
+  - [4번 결과](#4번-결과)
+  - [5번: 확인 (서버)](#5번-확인-서버)
+  - [정상 기준](#정상-기준)
+- [5번 확인 결과와 정리](#5번-확인-결과와-정리)
+  - [답변](#답변-8)
+  - [5번 확인 결과](#5번-확인-결과)
+  - [namespaces 앱이 OutOfSync인 이유](#namespaces-앱이-outofsync인-이유)
+  - [5번 정리 (서버)](#5번-정리-서버)
+  - [마지막 정리 (직접)](#마지막-정리-직접)
+- [5번 정리 결과](#5번-정리-결과)
+  - [답변](#답변-9)
+  - [정리 결과](#정리-결과)
+  - [남은 정리 (서버)](#남은-정리-서버)
+  - [마지막 정리 (직접)](#마지막-정리-직접-1)
+  - [네임스페이스 변경 완료 후](#네임스페이스-변경-완료-후)
+- [네임스페이스 변경 완료](#네임스페이스-변경-완료)
+  - [답변](#답변-10)
+  - [작업 결과](#작업-결과)
+  - [남은 직접 작업](#남은-직접-작업)
+  - [다음: 7단계로 복귀](#다음-7단계로-복귀)
+- [ArgoCD 접속 방법](#argocd-접속-방법)
+  - [답변](#답변-11)
+  - [1. 서버에서 실행](#1-서버에서-실행)
+  - [2. Mac에서 실행](#2-mac에서-실행)
+  - [3. Mac 브라우저에서 접속](#3-mac-브라우저에서-접속)
+  - [연결 구조](#연결-구조)
+  - [접속 후](#접속-후)
+- [ArgoCD 접속 처리 보류와 task8 종료](#argocd-접속-처리-보류와-task8-종료)
+  - [답변](#답변-12)
+  - [보류한 것](#보류한-것)
+  - [보류 중 접속 방법](#보류-중-접속-방법)
+  - [재개할 때 순서](#재개할-때-순서)
+  - [task8 종료](#task8-종료)
 
 ---
 
@@ -641,3 +676,506 @@ kubectl -n choimory-infra get pods
 ```
 
 - 중간에 막히는 단계가 있으면 그 단계까지의 출력으로 확인
+
+---
+
+# 재설치 결과와 5번 확인
+
+> ```
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ grep -n "namespace:" bootstrap/root.yaml
+> 7:  namespace: choimory-infra
+> 17:    namespace: choimory-infra
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl get applications.argoproj.io,applicationsets.argoproj.io,appprojects.argoproj.io -A
+> kubectl delete crd applications.argoproj.io applicationsets.argoproj.io appprojects.argoproj.io
+> No resources found
+> customresourcedefinition.apiextensions.k8s.io "applications.argoproj.io" deleted
+> customresourcedefinition.apiextensions.k8s.io "applicationsets.argoproj.io" deleted
+> customresourcedefinition.apiextensions.k8s.io "appprojects.argoproj.io" deleted
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl create namespace choimory-infra
+> sed -e 's/namespace: infrastructure/namespace: choimory-infra/' \
+>     -e '/resourceVersion:/d' -e '/uid:/d' -e '/creationTimestamp:/d' \
+>     ~/sealed-secrets-key-backup.yaml > ~/sealed-secrets-key-restore.yaml
+> chmod 600 ~/sealed-secrets-key-restore.yaml
+> kubectl apply -f ~/sealed-secrets-key-restore.yaml
+> kubectl -n choimory-infra get secret -l sealedsecrets.bitnami.com/sealed-secrets-key
+> rm ~/sealed-secrets-key-restore.yaml
+> namespace/choimory-infra created
+> secret/sealed-secrets-key<KEY_ID> created
+> NAME                      TYPE                DATA   AGE
+> sealed-secrets-key<KEY_ID>   kubernetes.io/tls   2      0s
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> helm repo update argo
+> helm install argocd argo/argo-cd --version 10.17.0 -n choimory-infra -f infrastructure/argocd/values.yaml
+> kubectl -n choimory-infra rollout status deploy/argocd-server --timeout=5m
+> kubectl -n choimory-infra get pods
+> Hang tight while we grab the latest from your chart repositories...
+> ...Successfully got an update from the "argo" chart repository
+> Update Complete. ⎈Happy Helming!⎈
+> NAME: argocd
+> LAST DEPLOYED: Mon Nov 16 00:17:34 2026
+> NAMESPACE: choimory-infra
+> STATUS: deployed
+> REVISION: 1
+> DESCRIPTION: Install complete
+> TEST SUITE: None
+> NOTES:
+> (ArgoCD 접속 안내 생략)
+> Waiting for deployment "argocd-server" rollout to finish: 0 of 1 updated replicas are available...
+> deployment "argocd-server" successfully rolled out
+> NAME                                                READY   STATUS      RESTARTS   AGE
+> argocd-application-controller-0                     1/1     Running     0          12s
+> argocd-applicationset-controller-797985f4b7-8496p   1/1     Running     0          12s
+> argocd-redis-5fc69b46c8-frrck                       1/1     Running     0          12s
+> argocd-redis-secret-init-9klqp                      0/1     Completed   0          15s
+> argocd-repo-server-7b86c89c58-qk9r7                 0/1     Running     0          12s
+> argocd-server-6fb5747584-2q8z2                      1/1     Running     0          12s
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl apply -f bootstrap/root.yaml
+> application.argoproj.io/root created
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl -n choimory-infra get applications
+> kubectl -n choimory-infra get pods
+> NAME   SYNC STATUS   HEALTH STATUS
+> root   OutOfSync     Healthy
+> NAME                                                READY   STATUS      RESTARTS   AGE
+> argocd-application-controller-0                     1/1     Running     0          18s
+> argocd-applicationset-controller-797985f4b7-8496p   1/1     Running     0          18s
+> argocd-redis-5fc69b46c8-frrck                       1/1     Running     0          18s
+> argocd-redis-secret-init-9klqp                      0/1     Completed   0          21s
+> argocd-repo-server-7b86c89c58-qk9r7                 1/1     Running     0          18s
+> argocd-server-6fb5747584-2q8z2                      1/1     Running     0          18s
+> ```
+
+## 답변
+
+- 4-1~4-5가 모두 정상으로 끝남
+- 마지막 확인은 root 등록 18초 뒤라 아직 동기화 전이며, 5~10분 뒤 다시 확인
+
+## 4번 결과
+
+| 단계 | 결과 |
+|---|---|
+| 4-1 gitops 클론 | `namespace: choimory-infra` 두 줄 확인 |
+| 4-2 ArgoCD CRD | 남은 리소스가 없는 것을 확인 후 3개 삭제 |
+| 4-3 키 복원 | `choimory-infra`에 기존 키 Secret 생성. 작업 전과 같은 이름이라 같은 키 |
+| 4-4 ArgoCD 설치 | Helm 릴리스 `deployed`, Pod 5개 `Running` (`redis-secret-init`은 1회성 작업이라 `Completed`가 정상) |
+| 4-5 root 등록 | `root` 생성. `OutOfSync`는 첫 동기화 전이라 정상 |
+
+## 5번: 확인 (서버)
+
+```bash
+# 공용 도구와 프로젝트 앱 상태
+kubectl -n choimory-infra get applications
+kubectl -n choimory-infra get pods
+
+# 기존 키로 SealedSecret이 풀리는지
+kubectl get sealedsecrets -A
+
+# 프로젝트 리소스와 Gateway 연결
+kubectl -n choimory-dev-stg get pods,pvc,httproute
+kubectl -n choimory-dev-prod get pods,pvc,httproute
+kubectl -n choimory-infra get gateway
+
+# 다시 만들어져야 하는 클러스터 단위 리소스
+kubectl get apiservice v1beta1.metrics.k8s.io
+kubectl get mutatingwebhookconfigurations
+```
+
+## 정상 기준
+
+| 항목 | 기대 결과 |
+|---|---|
+| Application | 공용 도구 9개와 `choimory-dev`, 프로젝트 앱 10개가 `Synced`. front, member-api 4개만 `Degraded` (이미지 없음) |
+| SealedSecret | 4개 모두 `SYNCED True`. 기존 키로 풀렸다는 뜻 |
+| postgres, redis Pod | AGE 5d 이상 그대로, RESTARTS 0 |
+| Gateway | `shared-gateway`가 `PROGRAMMED True` |
+| APIService | `choimory-infra/metrics-server`, `AVAILABLE True` |
+| 웹훅 | cnpg 2개, `envoy-gateway-topology-injector.choimory-infra` |
+
+- 10분이 지나도 앱이 다 생기지 않거나 `gateway`가 `Degraded`면, task5의 GatewayClass 문제가 다시 생겼을 수 있음. 같은 방법으로 처리
+- ArgoCD 화면 로그인은 확인 후 정리 단계에서 안내
+
+---
+
+# 5번 확인 결과와 정리
+
+> ```
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl -n choimory-infra get applications
+> kubectl -n choimory-infra get pods
+> NAME                           SYNC STATUS   HEALTH STATUS
+> argocd                         Synced        Healthy
+> choimory-dev                   Synced        Healthy
+> choimory-dev-prod-front        Synced        Degraded
+> choimory-dev-prod-member-api   Synced        Degraded
+> choimory-dev-prod-namespaces   OutOfSync     Healthy
+> choimory-dev-prod-postgres     Synced        Healthy
+> choimory-dev-prod-redis        Synced        Healthy
+> choimory-dev-stg-front         Synced        Degraded
+> choimory-dev-stg-member-api    Synced        Degraded
+> choimory-dev-stg-namespaces    OutOfSync     Healthy
+> choimory-dev-stg-postgres      Synced        Healthy
+> choimory-dev-stg-redis         Synced        Healthy
+> cloudnative-pg                 Synced        Healthy
+> envoy-gateway                  Synced        Healthy
+> gateway                        Synced        Healthy
+> local-path-provisioner         Synced        Healthy
+> metrics-server                 Synced        Healthy
+> root                           Synced        Healthy
+> sealed-secrets                 Synced        Healthy
+> NAME                                                           READY   STATUS    RESTARTS   AGE
+> argocd-application-controller-0                                1/1     Running   0          2m19s
+> argocd-applicationset-controller-797985f4b7-8496p              1/1     Running   0          2m19s
+> argocd-redis-5fc69b46c8-frrck                                  1/1     Running   0          2m19s
+> argocd-repo-server-7b86c89c58-qk9r7                            1/1     Running   0          2m19s
+> argocd-server-6fb5747584-2q8z2                                 1/1     Running   0          2m19s
+> cloudnative-pg-75f945f846-lczns                                1/1     Running   0          73s
+> envoy-choimory-infra-shared-gateway-ab26edc9-f695c9848-r887q   2/2     Running   0          53s
+> envoy-gateway-65c678d44b-hwz22                                 1/1     Running   0          54s
+> local-path-provisioner-54745b98cf-24r7m                        1/1     Running   0          106s
+> metrics-server-55c6b8755f-f26l9                                1/1     Running   0          99s
+> sealed-secrets-controller-5b56d98858-wbm4r                     1/1     Running   0          108s
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl get sealedsecrets -A
+> NAMESPACE           NAME                             STATUS   SYNCED   AGE
+> choimory-dev-prod   choimory-dev-member-api-secret            True     4h59m
+> choimory-dev-prod   choimory-dev-redis-secret                 True     4h58m
+> choimory-dev-stg    choimory-dev-member-api-secret            True     4h57m
+> choimory-dev-stg    choimory-dev-redis-secret                 True     4h58m
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl -n choimory-dev-stg get pods,pvc,httproute
+> kubectl -n choimory-dev-prod get pods,pvc,httproute
+> kubectl -n choimory-infra get gateway
+> NAME                                           READY   STATUS             RESTARTS   AGE
+> pod/choimory-dev-front-85469c8fb5-klvlp        0/1     ImagePullBackOff   0          5d2h
+> pod/choimory-dev-member-api-69cd5894dd-vcmbc   0/1     ImagePullBackOff   0          5d2h
+> pod/choimory-dev-postgres-1                    1/1     Running            0          5d2h
+> pod/choimory-dev-redis-0                       1/1     Running            0          5d2h
+>
+> NAME                                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS              VOLUMEATTRIBUTESCLASS   AGE
+> persistentvolumeclaim/choimory-dev-postgres-1     Bound    pvc-<STG_POSTGRES_PV_ID>   5Gi        RWO            local-path-choimory-dev   <unset>                 5d2h
+> persistentvolumeclaim/data-choimory-dev-redis-0   Bound    pvc-<STG_REDIS_PV_ID>   1Gi        RWO            local-path-choimory-dev   <unset>                 5d2h
+>
+> NAME                                                          HOSTNAMES                             AGE
+> httproute.gateway.networking.k8s.io/choimory-dev-front        ["staging.choimory.dev"]              5d2h
+> httproute.gateway.networking.k8s.io/choimory-dev-member-api   ["staging-member-api.choimory.dev"]   5d2h
+> NAME                                          READY   STATUS             RESTARTS   AGE
+> pod/choimory-dev-front-56889d449f-x6z6t       0/1     ImagePullBackOff   0          5d2h
+> pod/choimory-dev-member-api-dd677d978-pqfk6   0/1     ImagePullBackOff   0          5d2h
+> pod/choimory-dev-postgres-1                   1/1     Running            0          5d2h
+> pod/choimory-dev-redis-0                      1/1     Running            0          5d2h
+>
+> NAME                                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS              VOLUMEATTRIBUTESCLASS   AGE
+> persistentvolumeclaim/choimory-dev-postgres-1     Bound    pvc-<PROD_POSTGRES_PV_ID>   10Gi       RWO            local-path-choimory-dev   <unset>                 5d2h
+> persistentvolumeclaim/data-choimory-dev-redis-0   Bound    pvc-<PROD_REDIS_PV_ID>   1Gi        RWO            local-path-choimory-dev   <unset>                 5d2h
+>
+> NAME                                                          HOSTNAMES                     AGE
+> httproute.gateway.networking.k8s.io/choimory-dev-front        ["choimory.dev"]              5d2h
+> httproute.gateway.networking.k8s.io/choimory-dev-member-api   ["member-api.choimory.dev"]   5d2h
+> NAME             CLASS   ADDRESS          PROGRAMMED   AGE
+> shared-gateway   envoy   <GATEWAY_CLUSTER_IP>   True         68s
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl get apiservice v1beta1.metrics.k8s.io
+> kubectl get mutatingwebhookconfigurations
+> NAME                     SERVICE                         AVAILABLE   AGE
+> v1beta1.metrics.k8s.io   choimory-infra/metrics-server   True        112s
+> NAME                                             WEBHOOKS   AGE
+> cnpg-mutating-webhook-configuration              4          5d5h
+> envoy-gateway-topology-injector.choimory-infra   1          79s
+> ```
+
+## 답변
+
+- 재설치 완료. 공용 도구는 모두 `choimory-infra`에서 정상 동작
+- 남은 것은 예상했던 정리 작업뿐
+
+## 5번 확인 결과
+
+| 항목 | 결과 |
+|---|---|
+| 공용 도구 앱 9개와 `root`, `choimory-dev` | 모두 `Synced`, `Healthy` |
+| 공용 도구 Pod | ArgoCD 5개와 공용 도구 6개 모두 `Running`. Envoy 프록시 이름이 `envoy-choimory-infra-shared-gateway-...`로 바뀜 |
+| SealedSecret | 4개 모두 `SYNCED True`. 기존 키로 풀림 |
+| postgres, redis Pod | AGE 5d2h 그대로, RESTARTS 0 |
+| PVC | 4개 `Bound`, 볼륨 이름 그대로 |
+| Gateway | `shared-gateway` `PROGRAMMED True` |
+| APIService | `choimory-infra/metrics-server`, `AVAILABLE True` |
+| 웹훅 | cnpg, `envoy-gateway-topology-injector.choimory-infra` |
+| front, member-api | `Degraded` (이미지 없음, 예상대로) |
+| `choimory-dev-{stg,prod}-namespaces` | `OutOfSync` (정리 대상) |
+
+## namespaces 앱이 OutOfSync인 이유
+
+- 옛 NetworkPolicy `allow-same-namespace-and-infrastructure`가 Git에는 없고 클러스터에는 남아 있음
+- namespaces 앱은 prune이 꺼져 있어 ArgoCD가 지우지 않고 "Git과 다름"으로만 표시함
+- 이미 없는 `infrastructure` 네임스페이스만 허용하는 규칙이라 지워도 통신에 영향 없음. 직접 지우면 `Synced`가 됨
+
+## 5번 정리 (서버)
+
+```bash
+# 5-1) 옛 NetworkPolicy 삭제와 새 NetworkPolicy 확인
+kubectl -n choimory-dev-stg delete networkpolicy allow-same-namespace-and-infrastructure
+kubectl -n choimory-dev-prod delete networkpolicy allow-same-namespace-and-infrastructure
+kubectl -n choimory-dev-stg get networkpolicy
+kubectl -n choimory-dev-prod get networkpolicy
+```
+
+- 각 네임스페이스에 `allow-same-namespace-and-infra`만 남아야 함
+
+```bash
+# 5-2) 이름에 infrastructure가 들어간 클러스터 단위 리소스 정리
+kubectl get clusterroles,clusterrolebindings | grep infrastructure
+kubectl delete clusterrolebinding envoy-gateway-gateway-helm-certgen:infrastructure
+kubectl get clusterroles | grep infrastructure
+```
+
+- 마지막 명령어에 `...:infrastructure` 같은 ClusterRole이 나오면 이어서 삭제
+
+```bash
+# 5-3) 남은 참조 확인. 결과가 비어 있어야 함
+kubectl get clusterrolebindings -o custom-columns='NAME:.metadata.name,NS:.subjects[*].namespace' | grep infrastructure
+
+# 5-4) HTTPRoute가 새 Gateway에 연결됐는지
+kubectl -n choimory-dev-stg get httproute -o custom-columns='NAME:.metadata.name,GATEWAY_NS:.status.parents[*].parentRef.namespace,ACCEPTED:.status.parents[*].conditions[?(@.type=="Accepted")].status'
+kubectl -n choimory-dev-prod get httproute -o custom-columns='NAME:.metadata.name,GATEWAY_NS:.status.parents[*].parentRef.namespace,ACCEPTED:.status.parents[*].conditions[?(@.type=="Accepted")].status'
+
+# 5-5) namespaces 앱 상태
+kubectl -n choimory-infra get applications | grep namespaces
+```
+
+- 5-4) `GATEWAY_NS`가 `choimory-infra`, `ACCEPTED`가 `True`
+- 5-5) 두 앱이 `Synced` (1~3분 뒤 확인)
+
+## 마지막 정리 (직접)
+
+- ArgoCD 로그인: 새 비밀번호로 화면에 로그인한 뒤 `argocd-initial-admin-secret` 삭제
+- 키 백업 보관: `~/sealed-secrets-key-backup.yaml`을 서버 밖 안전한 곳(비밀번호 관리자 등)으로 옮기고 위치를 기록
+
+---
+
+# 5번 정리 결과
+
+> ```
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl -n choimory-dev-stg delete networkpolicy allow-same-namespace-and-infrastructure
+> kubectl -n choimory-dev-prod delete networkpolicy allow-same-namespace-and-infrastructure
+> kubectl -n choimory-dev-stg get networkpolicy
+> kubectl -n choimory-dev-prod get networkpolicy
+> networkpolicy.networking.k8s.io "allow-same-namespace-and-infrastructure" deleted from choimory-dev-stg namespace
+> networkpolicy.networking.k8s.io "allow-same-namespace-and-infrastructure" deleted from choimory-dev-prod namespace
+> NAME                             POD-SELECTOR   AGE
+> allow-same-namespace-and-infra   <none>         2m46s
+> NAME                             POD-SELECTOR   AGE
+> allow-same-namespace-and-infra   <none>         2m46s
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl get clusterroles,clusterrolebindings | grep infrastructure
+> kubectl delete clusterrolebinding envoy-gateway-gateway-helm-certgen:infrastructure
+> kubectl get clusterroles | grep infrastructure
+> clusterrole.rbac.authorization.k8s.io/envoy-gateway-gateway-helm-certgen:infrastructure                      2026-11-10T09:30:11Z
+> clusterrolebinding.rbac.authorization.k8s.io/envoy-gateway-gateway-helm-certgen:infrastructure               ClusterRole/envoy-gateway-gateway-helm-certgen:infrastructure                      5d5h
+> clusterrolebinding.rbac.authorization.k8s.io "envoy-gateway-gateway-helm-certgen:infrastructure" deleted
+> envoy-gateway-gateway-helm-certgen:infrastructure                      2026-11-10T09:30:11Z
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl get clusterrolebindings -o custom-columns='NAME:.metadata.name,NS:.subjects[*].namespace' | grep infrastructure
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl -n choimory-dev-stg get httproute -o custom-columns='NAME:.metadata.name,GATEWAY_NS:.status.parents[*].parentRef.namespace,ACCEPTED:.status.parents[*].conditions[?(@.type=="Accepted")].status'
+> kubectl -n choimory-dev-prod get httproute -o custom-columns='NAME:.metadata.name,GATEWAY_NS:.status.parents[*].parentRef.namespace,ACCEPTED:.status.parents[*].conditions[?(@.type=="Accepted")].status'
+> NAME                      GATEWAY_NS       ACCEPTED
+> choimory-dev-front        choimory-infra   True
+> choimory-dev-member-api   choimory-infra   True
+> NAME                      GATEWAY_NS       ACCEPTED
+> choimory-dev-front        choimory-infra   True
+> choimory-dev-member-api   choimory-infra   True
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl -n choimory-infra get applications | grep namespaces
+> choimory-dev-prod-namespaces   Synced        Healthy
+> choimory-dev-stg-namespaces    Synced        Healthy
+> ```
+
+## 답변
+
+- 5번 정리 확인. 남은 것은 ClusterRole `envoy-gateway-gateway-helm-certgen:infrastructure` 하나이며, 이것만 지우면 `infrastructure` 흔적이 모두 사라짐
+
+## 정리 결과
+
+| 항목 | 결과 |
+|---|---|
+| 옛 NetworkPolicy | stg, prod 모두 삭제. 새 `allow-same-namespace-and-infra`만 남음 |
+| ClusterRoleBinding `...certgen:infrastructure` | 삭제됨 |
+| `infrastructure`를 가리키는 ClusterRoleBinding | 없음 |
+| HTTPRoute | 4개 모두 `choimory-infra` Gateway에 연결, `ACCEPTED True` |
+| namespaces 앱 | stg, prod 모두 `Synced`, `Healthy` |
+| ClusterRole `...certgen:infrastructure` | 남아 있음 (삭제 필요) |
+
+## 남은 정리 (서버)
+
+```bash
+kubectl delete clusterrole envoy-gateway-gateway-helm-certgen:infrastructure
+kubectl get clusterroles,clusterrolebindings | grep infrastructure
+```
+
+- 두 번째 명령어 결과가 비어 있으면 완료
+
+## 마지막 정리 (직접)
+
+- ArgoCD 로그인과 초기 비밀번호 삭제
+
+```bash
+# 초기 비밀번호 확인 (서버)
+kubectl -n choimory-infra get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+```
+
+- task5 때와 같은 방법으로 화면에 접속해 `admin`으로 로그인. 네임스페이스만 `choimory-infra`로 바뀜
+- 로그인 후 User Info → Update Password에서 비밀번호 변경 추천. 변경 후 초기 비밀번호 Secret 삭제
+
+```bash
+kubectl -n choimory-infra delete secret argocd-initial-admin-secret
+```
+
+- 키 백업 보관
+  - `~/sealed-secrets-key-backup.yaml`을 서버 밖 안전한 곳(비밀번호 관리자 등)에 옮기고 서버의 파일은 삭제
+  - 보관 위치를 기록. 클러스터를 다시 설치할 때 이 키가 있어야 기존 SealedSecret을 풀 수 있음
+
+## 네임스페이스 변경 완료 후
+
+- 위 정리가 끝나면 `infrastructure` → `choimory-infra` 변경 작업 완료
+- 원래 하던 7단계로 돌아감
+  1. 앱 레포 2개의 `deploy.yml` 커밋, `dev` push, `stg`·`main` 머지
+  2. Actions 테스트 결과 확인
+  3. `stg` 브랜치로 Run workflow 실행
+
+---
+
+# 네임스페이스 변경 완료
+
+> ```
+> choimory@choimory-server:/data/dev/choimory/repo/choimory-gitops$ 
+> kubectl delete clusterrole envoy-gateway-gateway-helm-certgen:infrastructure
+> kubectl get clusterroles,clusterrolebindings | grep infrastructure
+> clusterrole.rbac.authorization.k8s.io "envoy-gateway-gateway-helm-certgen:infrastructure" deleted
+> ```
+
+## 답변
+
+- `infrastructure` → `choimory-infra` 네임스페이스 변경 완료. 클러스터에 `infrastructure` 흔적이 남아 있지 않음
+
+## 작업 결과
+
+| 항목 | 상태 |
+|---|---|
+| 공용 도구 | 모두 `choimory-infra`에서 동작. 앱 `Synced`, `Healthy` |
+| SealedSecret | 기존 키로 4개 모두 풀림 |
+| postgres, redis | 재시작 없이 계속 동작. PVC 그대로 |
+| HTTPRoute | 새 Gateway에 연결됨 |
+| 남은 옛 리소스 | 없음 (NetworkPolicy, 웹훅, ClusterRole, ClusterRoleBinding 모두 정리) |
+
+## 남은 직접 작업
+
+- ArgoCD: 로그인 → 비밀번호 변경 → `argocd-initial-admin-secret` 삭제
+- 키 백업: `~/sealed-secrets-key-backup.yaml`을 서버 밖 안전한 곳에 옮기고 위치를 기록한 뒤 서버의 파일 삭제
+
+## 다음: 7단계로 복귀
+
+1. 앱 레포 2개(`choimory-dev-front`, `choimory-dev-member-api`)의 `deploy.yml` 수정 커밋, `dev` push
+2. release 브랜치로 `stg`, `main` 머지
+3. Actions에서 test job 성공, deploy job skipped 확인. `main` 머지 후 Run workflow 버튼 확인
+4. `stg` 브랜치로 Run workflow 실행
+
+---
+
+# ArgoCD 접속 방법
+
+> argocd 접속 아직 한번도 안해봤음. 접속주소가 어케됨?
+
+## 답변
+
+- ArgoCD는 외부에 공개하지 않아 접속 주소가 없음
+- 서버에서 port-forward로 열고, Mac에서 SSH 터널로 연결해 접속함
+- task5의 "관리 화면 접속" 방법과 같고 네임스페이스만 `choimory-infra`로 바뀜
+
+## 1. 서버에서 실행
+
+```bash
+# 초기 비밀번호 확인
+kubectl -n choimory-infra get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
+
+# ArgoCD 화면을 서버의 8080 포트로 연결. 접속하는 동안 이 터미널은 켜 둠
+kubectl -n choimory-infra port-forward svc/argocd-server 8080:443
+```
+
+## 2. Mac에서 실행
+
+- 새 터미널에서 실행. `<서버계정>`은 실제 서버 계정
+- Tailscale 이름(`choimory-server`)을 쓰므로 집 밖에서도 가능
+
+```bash
+ssh -L 8080:localhost:8080 <서버계정>@choimory-server
+```
+
+## 3. Mac 브라우저에서 접속
+
+- 주소: `https://localhost:8080`
+- 계정: `admin`, 비밀번호는 1번에서 확인한 값
+- 자체 서명 인증서라 "안전하지 않음" 경고가 뜨는 것이 정상. 고급 → 계속 진행
+
+## 연결 구조
+
+```
+Mac 브라우저 → localhost:8080
+  → SSH 터널 → 서버 localhost:8080
+  → port-forward → choimory-infra/argocd-server:443
+```
+
+## 접속 후
+
+1. User Info → Update Password로 비밀번호 변경
+2. 서버에서 초기 비밀번호 Secret 삭제
+
+```bash
+kubectl -n choimory-infra delete secret argocd-initial-admin-secret
+```
+
+3. 다 쓰면 서버 port-forward 터미널은 `Ctrl+C`, Mac SSH 터미널은 `exit`
+
+- 초기 비밀번호는 문서에 남기지 않음
+- 매번 여는 것이 번거로우면 2차 Cloudflare 작업 때 접근 제한을 걸고 도메인으로 여는 방법도 있음. 지금은 이 방식이 가장 안전함
+
+---
+
+# ArgoCD 접속 처리 보류와 task8 종료
+
+> 그럼 그냥 argocd 보류한다는 내용만 task8에 추가하고 task8은 닫자
+
+## 답변
+
+- ArgoCD 접속 처리를 보류하고 task8(네임스페이스 변경 작업)을 종료함
+- 결정 과정은 [plan10.md 인프라 도구 접속은 이후로 미룸](./plan10.md#인프라-도구-접속은-이후로-미룸), [plan10.md 도메인 연결 후 초기 비밀번호 처리](./plan10.md#도메인-연결-후-초기-비밀번호-처리) 참고
+
+## 보류한 것
+
+| 항목 | 현재 상태 | 처리 시점 |
+|---|---|---|
+| ArgoCD 도메인 접속 | 외부 접속 주소 없음 | 앱 배포와 Cloudflare Tunnel 이후, 구매한 도메인으로 인프라 도구 연결할 때 |
+| ArgoCD 초기 비밀번호 | `argocd-initial-admin-secret` 유지, 비밀번호 초기값 | 위 도메인 연결 작업의 첫 단계 |
+
+## 보류 중 접속 방법
+
+- 필요하면 port-forward와 SSH 터널로 접속 ([ArgoCD 접속 방법](#argocd-접속-방법))
+
+## 재개할 때 순서
+
+1. Cloudflare Access(로그인 관문)를 먼저 걸고 ArgoCD 도메인 연결
+2. 초기 비밀번호 확인 후 로그인
+3. 비밀번호 변경
+4. `argocd-initial-admin-secret` 삭제
+
+- 비밀번호를 바꾸기 전에 Secret만 지우지 않음
+- Cloudflare Access 없이 도메인을 먼저 열지 않음
+
+## task8 종료
+
+- `infrastructure` → `choimory-infra` 네임스페이스 변경 작업 완료
+- 직접 할 일로 남은 것: sealed-secrets 키 백업(`~/sealed-secrets-key-backup.yaml`)을 서버 밖 안전한 곳에 보관하고 서버의 파일 삭제
+- 이후 작업(7단계 앱 배포)은 [plan11.md](./plan11.md)에서 이어서 진행

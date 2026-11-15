@@ -389,8 +389,8 @@ projects/choimory-dev/
 > pod/choimory-dev-redis-0                       1/1     Running            0          4d23h
 >
 > NAME                                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS              VOLUMEATTRIBUTESCLASS   AGE
-> persistentvolumeclaim/choimory-dev-postgres-1     Bound    pvc-5581332e-cda2-4ac1-b40a-3ead8f7adbdb   5Gi        RWO            local-path-choimory-dev   <unset>                 4d23h
-> persistentvolumeclaim/data-choimory-dev-redis-0   Bound    pvc-e7f681ab-d246-4fcc-9771-d11151e81045   1Gi        RWO            local-path-choimory-dev   <unset>                 4d23h
+> persistentvolumeclaim/choimory-dev-postgres-1     Bound    pvc-<STG_POSTGRES_PV_ID>   5Gi        RWO            local-path-choimory-dev   <unset>                 4d23h
+> persistentvolumeclaim/data-choimory-dev-redis-0   Bound    pvc-<STG_REDIS_PV_ID>   1Gi        RWO            local-path-choimory-dev   <unset>                 4d23h
 > choimory@choimory-server:/data/storage/media$   kubectl -n choimory-dev-prod get pods,pvc
 > NAME                                          READY   STATUS             RESTARTS   AGE
 > pod/choimory-dev-front-56889d449f-x6z6t       0/1     ImagePullBackOff   0          4d23h
@@ -399,8 +399,8 @@ projects/choimory-dev/
 > pod/choimory-dev-redis-0                      1/1     Running            0          4d23h
 >
 > NAME                                              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS              VOLUMEATTRIBUTESCLASS   AGE
-> persistentvolumeclaim/choimory-dev-postgres-1     Bound    pvc-7c1d4bcb-dbe1-493c-afb4-823b415f58f8   10Gi       RWO            local-path-choimory-dev   <unset>                 4d23h
-> persistentvolumeclaim/data-choimory-dev-redis-0   Bound    pvc-9c9e696f-76c0-4e3a-81ad-ca8b668e225e   1Gi        RWO            local-path-choimory-dev   <unset>                 4d23h
+> persistentvolumeclaim/choimory-dev-postgres-1     Bound    pvc-<PROD_POSTGRES_PV_ID>   10Gi       RWO            local-path-choimory-dev   <unset>                 4d23h
+> persistentvolumeclaim/data-choimory-dev-redis-0   Bound    pvc-<PROD_REDIS_PV_ID>   1Gi        RWO            local-path-choimory-dev   <unset>                 4d23h
 > choimory@choimory-server:/data/storage/media$   kubectl -n choimory-dev-stg get
 > You must specify the type of resource to get. Use "kubectl api-resources" for a complete list of supported resources.
 >
