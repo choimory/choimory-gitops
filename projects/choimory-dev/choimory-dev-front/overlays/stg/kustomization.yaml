@@ -5,35 +5,36 @@ kind: Kustomization
 namespace: choimory-dev-stg
 
 resources:
-  - ../../base
+- ../../base
 
 images:
-  - name: ghcr.io/choimory/choimory-dev-front
-    newTag: stg-bootstrap
+- name: ghcr.io/choimory/choimory-dev-front
+  newTag: stg-99f66e756d71240c29c04a7c9b0a5b4bd557d753
 
-patches:
-  - patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: choimory-dev-front
-      spec:
-        template:
-          spec:
-            containers:
-              - name: choimory-dev-front
-                resources:
-                  requests:
-                    cpu: 100m
-                    memory: 96Mi
-                  limits:
-                    memory: 192Mi
-  - patch: |-
-      apiVersion: gateway.networking.k8s.io/v1
-      kind: HTTPRoute
-      metadata:
-        name: choimory-dev-front
-      spec:
         # stg 페이지 도메인. 내부 이름은 stg, 도메인만 staging을 쓴다.
-        hostnames:
-          - staging.choimory.dev
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: choimory-dev-front
+    spec:
+      template:
+        spec:
+          containers:
+            - name: choimory-dev-front
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 96Mi
+                limits:
+                  memory: 192Mi
+- patch: |-
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: choimory-dev-front
+    spec:
+      # stg 페이지 도메인. 내부 이름은 stg, 도메인만 staging을 쓴다.
+      hostnames:
+        - staging.choimory.dev
