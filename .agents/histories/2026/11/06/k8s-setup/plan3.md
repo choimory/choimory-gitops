@@ -824,7 +824,7 @@ infrastructure/local-path-provisioner/
 
 | 영역 | 결정 |
 | --- | --- |
-| 서버 | Beelink EQR6 (Ryzen 7 7735HS, 32GB), 노드 1대. Docker Compose 앱과 함께 운영 |
+| 서버 | Beelink EQR6 (Ryzen 7 7735HS, RAM 26Gi), 노드 1대. Docker Compose 앱과 함께 운영 |
 | Kubernetes | kubeadm |
 | CI / CD / 이미지 저장소 | GitHub Actions / ArgoCD (pull 방식) / GHCR |
 | 매니페스트 | 앱은 Kustomize, ArgoCD 최초 설치만 Helm. 이후 ArgoCD가 전체 관리 |
@@ -956,7 +956,8 @@ infrastructure/local-path-provisioner/
 
 ## 자원 설정
 
-- 현재 RAM 23.3GiB가 남아 있으므로 OS와 Docker Compose 앱이 약 9GB를 쓰는 상태. Immich ML, Jellyfin 트랜스코딩 피크를 고려해 여유를 둠
+- 전체 RAM 26Gi 중 23.3GiB가 남아 있으므로 OS와 Docker Compose 앱이 약 3Gi를 쓰는 상태. Immich ML, Jellyfin 트랜스코딩 피크를 고려해 여유를 둠
+- 정정: 처음에는 RAM 32GB 기준으로 계산했으나, 서버에서 `free -h`로 확인한 실제 값(26Gi)으로 고침 ([task4.md](./task4.md), [plan7.md](./plan7.md#ram-확인-결과에-따른-처리) 참고)
 
 ### kubelet 예약
 
@@ -965,7 +966,7 @@ infrastructure/local-path-provisioner/
 | `systemReserved` | memory 10Gi, cpu 2 | OS와 Docker Compose 앱 몫 |
 | `kubeReserved` | memory 1Gi, cpu 500m | kubelet과 containerd 몫 |
 | `evictionHard` | `memory.available<500Mi` | 메모리가 이만큼 남으면 Pod를 정리해 서버를 보호 |
-| k8s가 쓸 수 있는 양 | 약 20Gi | |
+| k8s가 쓸 수 있는 양 | 약 14.5Gi | |
 
 ### Pod별 값
 
@@ -987,9 +988,9 @@ infrastructure/local-path-provisioner/
 | --- | --- |
 | k8s 기반 (control plane, Cilium, ArgoCD, Envoy 등) | 약 3~4Gi |
 | choimory-dev | 약 4Gi |
-| 합계 (20Gi 중) | 약 7~8Gi |
+| 합계 (14.5Gi 중) | 약 7~8Gi |
 
-- 프로젝트를 2~3개 더 추가해도 들어감
+- 프로젝트를 1~2개 더 추가해도 들어감
 
 ### 디스크
 

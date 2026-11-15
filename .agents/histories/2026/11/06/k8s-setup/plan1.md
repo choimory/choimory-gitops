@@ -303,7 +303,7 @@ apps/
 | Docker와 공존 | Docker가 설치한 containerd에는 CRI 기능이 꺼져 있음(`disabled_plugins = ["cri"]`). 이걸 켜고 `SystemdCgroup = true`로 설정해 같이 쓰는 방식 추천. Docker는 `moby`, k8s는 `k8s.io` 네임스페이스를 써서 컨테이너가 섞이지 않음. containerd 재시작 시 Docker 앱이 잠깐 영향받을 수 있어 작업 시간을 정해 진행. (cri-dockerd는 비추천) |
 | swap | Ubuntu 서버 기본 `/swap.img`를 꺼야 함 |
 | 커널 설정 | `overlay`, `br_netfilter` 모듈과 `ip_forward` sysctl. IP 포워딩은 노션 기준 이미 켜져 있음 |
-| 대역 충돌 확인 | Pod `10.244.0.0/16`, Service `10.96.0.0/12`(기본값)는 Docker(`172.x`), LAN(`192.168.10.0/24`), Tailscale(`100.64.0.0/10`)과 겹치지 않아 그대로 사용 가능 |
+| 대역 충돌 확인 | Pod `10.244.0.0/16`, Service `10.96.0.0/12`(기본값)는 Docker(`172.x`), LAN(`<LAN_CIDR>`), Tailscale(`100.64.0.0/10`)과 겹치지 않아 그대로 사용 가능 |
 | 노드 1대 구성 | 컨트롤 플레인 taint를 제거해 앱 파드도 같은 노드에 뜨게 함 |
 | CNI | Calico 또는 Cilium. Cilium이 요즘 실무 채택이 늘고 있고 NetworkPolicy와 관측 기능도 강함 |
 | Ingress | ingress-nginx는 2026년 3월에 유지보수 종료. 새로 시작한다면 Gateway API 구현체(Envoy Gateway, Cilium Gateway, Traefik) 추천 |
