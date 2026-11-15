@@ -1,4 +1,5 @@
-# API 도메인의 /member 경로를 member-api로 전달한다. 도메인은 환경별 overlay에서 지정한다.
+# member-api 도메인으로 들어온 요청을 경로 그대로 member-api로 전달한다. 도메인은 환경별 overlay에서 지정한다.
+# 서비스마다 서브도메인을 두므로 경로에 서비스 이름을 붙이지 않는다. (예: member-api.choimory.dev/v1/member/1)
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -8,17 +9,6 @@ spec:
     - name: shared-gateway
       namespace: infrastructure
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /member
-      # 앱 코드는 /member 접두어를 모르므로 떼고 전달한다.
-      filters:
-        - type: URLRewrite
-          urlRewrite:
-            path:
-              type: ReplacePrefixMatch
-              replacePrefixMatch: /
-      backendRefs:
+    - backendRefs:
         - name: choimory-dev-member-api
           port: 8080

@@ -39,6 +39,6 @@ patches:
       metadata:
         name: choimory-dev-member-api
       spec:
-        # stg API 도메인. 내부 이름은 stg, 도메인만 staging을 쓴다.
+        # stg member-api 도메인. 내부 이름은 stg, 도메인만 staging을 쓴다.
         hostnames:
-          - staging-api.choimory.dev
+          - staging-member-api.choimory.dev
