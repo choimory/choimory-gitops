@@ -5,7 +5,7 @@ metadata:
   name: choimory-dev-front
 spec:
   parentRefs:
-    - name: shared-gateway
+    - name: gateway
       namespace: choimory-infra
   rules:
     - matches:

@@ -6,7 +6,7 @@ metadata:
   name: choimory-dev-member-api
 spec:
   parentRefs:
-    - name: shared-gateway
+    - name: gateway
       namespace: choimory-infra
   rules:
     - backendRefs:
