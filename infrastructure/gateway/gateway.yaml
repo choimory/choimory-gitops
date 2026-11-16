@@ -39,7 +39,7 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: shared-gateway
+  name: gateway
 spec:
   gatewayClassName: envoy
   listeners:

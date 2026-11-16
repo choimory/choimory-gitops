@@ -14,7 +14,7 @@
 | CI | 각 앱 저장소의 GitHub Actions. 이미지를 GHCR에 올리고 이 저장소의 이미지 태그를 커밋 |
 | 이미지 저장소 | GHCR (`ghcr.io/choimory/<앱>`, public) |
 | 매니페스트 | 앱은 Kustomize(base + overlays), 공용 도구는 Helm 차트 + values |
-| Gateway | Envoy Gateway (Gateway API). 공용 Gateway `shared-gateway`를 모든 프로젝트가 같이 사용 |
+| Gateway | Envoy Gateway (Gateway API). 공용 Gateway `gateway`를 모든 프로젝트가 같이 사용 |
 | 비밀값 | Sealed Secrets. 암호화된 SealedSecret만 저장소에 커밋 |
 | DB | PostgreSQL은 CloudNativePG, Redis는 공식 이미지 StatefulSet. 프로젝트·환경별로 하나씩 |
 | 스토리지 | local-path-provisioner, `reclaimPolicy: Retain` |
@@ -67,7 +67,7 @@ projects/<프로젝트명>/           # 프로젝트별 구성
 | 3 | metrics-server | 차트 `3.14.0` |
 | 4 | cloudnative-pg | 차트 `0.29.1` |
 | 5 | envoy-gateway | `v1.10.0` |
-| 6 | gateway (EnvoyProxy, GatewayClass, `shared-gateway`) | |
+| 6 | gateway (EnvoyProxy, GatewayClass, `gateway`) | |
 | 7 | choimory-dev (프로젝트 AppProject, ApplicationSet) | |
 
 - ArgoCD 기본 동작은 자식 Application의 Health를 기다리지 않으므로, `infrastructure/argocd/values.yaml`에 Application Health 판단을 추가해 wave 순서를 지킨다
