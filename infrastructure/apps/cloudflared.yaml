@@ -1,0 +1,22 @@
+# Cloudflare Tunnel로 외부 요청을 공용 Gateway에 전달하는 cloudflared
+# gateway의 gateway-proxy Service로 연결하므로 gateway 다음 wave에 설치한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: choimory-cloudflared
+  namespace: choimory-infra
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/choimory/choimory-gitops.git
+    targetRevision: main
+    path: infrastructure/cloudflared
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: choimory-infra
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
