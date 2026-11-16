@@ -6,6 +6,9 @@ credentials-file: /etc/cloudflared/creds/credentials.json
 metrics: 0.0.0.0:2000
 # 버전은 이미지 태그로 관리한다.
 no-autoupdate: true
+# 원룸 네트워크에서 UDP 7844(QUIC)가 막혀 TCP 443(HTTP/2)로 연결한다.
+# 기본값(QUIC)으로 두면 HTTP/2로 넘어가기 전에 liveness probe 실패로 재시작이 반복된다.
+protocol: http2
 ingress:
   # 와일드카드는 루트 도메인에 매칭되지 않아 둘 다 둔다.
   # 도메인 구분은 HTTPRoute가 하므로 도메인을 추가해도 이 파일은 바꾸지 않는다.
