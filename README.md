@@ -14,7 +14,8 @@
 | CI | 각 앱 저장소의 GitHub Actions. 이미지를 GHCR에 올리고 이 저장소의 이미지 태그를 커밋 |
 | 이미지 저장소 | GHCR (`ghcr.io/choimory/<앱>`, public) |
 | 매니페스트 | 앱은 Kustomize(base + overlays), 공용 도구는 Helm 차트 + values |
-| Gateway | Envoy Gateway (Gateway API). 공용 Gateway `gateway`를 모든 프로젝트가 같이 사용 |
+| Gateway | Envoy Gateway (Gateway API). 공용 Gateway `gateway`를 모든 프로젝트가 같이 사용. Envoy 프록시 Deployment, Service 이름은 `gateway-proxy`로 고정 |
+| 외부 접속 | Cloudflare Tunnel `choimory-tunnel`. 클러스터 안의 cloudflared가 Cloudflare로 나가는 연결을 맺고 요청을 `gateway-proxy`로 전달. 서버 인바운드 포트 없음 |
 | 비밀값 | Sealed Secrets. 암호화된 SealedSecret만 저장소에 커밋 |
 | DB | PostgreSQL은 CloudNativePG, Redis는 공식 이미지 StatefulSet. 프로젝트·환경별로 하나씩 |
 | 스토리지 | local-path-provisioner, `reclaimPolicy: Retain` |
@@ -37,7 +38,8 @@ infrastructure/                 # 여러 프로젝트가 같이 쓰는 공용 �
 ├── metrics-server/             # metrics-server values
 ├── cloudnative-pg/             # CloudNativePG 오퍼레이터 values
 ├── envoy-gateway/              # Envoy Gateway values
-└── gateway/                    # EnvoyProxy, GatewayClass, 공용 Gateway
+├── gateway/                    # EnvoyProxy, GatewayClass, 공용 Gateway
+└── cloudflared/                # cloudflared 설정(Tunnel 라우팅), Deployment, 인증 파일 SealedSecret
 
 projects/<프로젝트명>/           # 프로젝트별 구성
 ├── argocd/                     # AppProject, ApplicationSet
@@ -69,9 +71,11 @@ projects/<프로젝트명>/           # 프로젝트별 구성
 | 5 | envoy-gateway | `v1.10.0` |
 | 6 | gateway (EnvoyProxy, GatewayClass, `gateway`) | |
 | 7 | choimory-dev (프로젝트 AppProject, ApplicationSet) | |
+| 7 | choimory-cloudflared | `2026.11.0` |
 
 - ArgoCD 기본 동작은 자식 Application의 Health를 기다리지 않으므로, `infrastructure/argocd/values.yaml`에 Application Health 판단을 추가해 wave 순서를 지킨다
 - EnvoyProxy는 GatewayClass보다 먼저 만들어져야 해서 `sync-wave: "-1"`을 둔다
+- Envoy 프록시 이름은 자동 생성(`envoy-<네임스페이스>-<Gateway>-<해시>`) 대신 EnvoyProxy에서 `gateway-proxy`로 고정한다. 이 설정은 GatewayClass 단위라 같은 GatewayClass로 Gateway를 두 개 이상 만들면 이름이 겹친다
 
 ---
 
@@ -102,7 +106,7 @@ projects/<프로젝트명>/           # 프로젝트별 구성
 
 - API는 서비스별 서브도메인을 쓰고, 경로는 앱 경로를 그대로 전달한다 (예: `member-api.choimory.dev/v1/member/join`)
 - Cloudflare Universal SSL이 한 단계 서브도메인만 덮으므로 `staging-member-api`처럼 하이픈을 쓴다
-- 도메인은 HTTPRoute에 지정되어 있으며, 외부 연결(Cloudflare Tunnel)은 아직 구성 전이다
+- 도메인은 HTTPRoute에 지정한다. Cloudflare Tunnel이 `choimory.dev`, `*.choimory.dev`를 모두 `gateway-proxy`로 넘기므로 도메인을 추가할 때 Cloudflare 설정은 바꾸지 않는다
 
 ### 자원
 

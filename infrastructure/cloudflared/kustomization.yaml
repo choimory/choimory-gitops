@@ -1,0 +1,14 @@
+# cloudflared 구성. 설정이 바뀌면 ConfigMap 이름의 해시가 바뀌어 Deployment가 재시작된다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-infra
+
+resources:
+  - deployment.yaml
+  - choimory-cloudflared-credentials.yaml
+
+configMapGenerator:
+  - name: choimory-cloudflared-config
+    files:
+      - config.yaml

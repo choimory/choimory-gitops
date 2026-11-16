@@ -1,0 +1,56 @@
+# Cloudflare로 나가는 연결만 사용하므로 서버에 열어 둔 포트가 없다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: choimory-cloudflared
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: choimory-cloudflared
+  template:
+    metadata:
+      labels:
+        app: choimory-cloudflared
+    spec:
+      containers:
+        - name: choimory-cloudflared
+          # 서버에 설치한 cloudflared CLI와 같은 버전을 쓴다.
+          image: cloudflare/cloudflared:2026.11.0
+          args:
+            - tunnel
+            - --config
+            - /etc/cloudflared/config/config.yaml
+            - run
+          ports:
+            - name: metrics
+              containerPort: 2000
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: metrics
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: metrics
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cloudflared/config
+              readOnly: true
+            - name: creds
+              mountPath: /etc/cloudflared/creds
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: choimory-cloudflared-config
+        - name: creds
+          secret:
+            secretName: choimory-cloudflared-credentials

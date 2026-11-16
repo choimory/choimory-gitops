@@ -1,0 +1,16 @@
+# cloudflared 설정. kustomization.yaml의 configMapGenerator가 ConfigMap으로 만든다.
+# Tunnel은 서버에서 cloudflared tunnel create choimory-tunnel로 만들었다. ID는 비밀값이 아니며 인증 파일만 비밀값이다.
+tunnel: c453c8b9-b3a9-459f-baa1-25ad6142a12c
+credentials-file: /etc/cloudflared/creds/credentials.json
+# /ready 상태 확인에 쓴다.
+metrics: 0.0.0.0:2000
+# 버전은 이미지 태그로 관리한다.
+no-autoupdate: true
+ingress:
+  # 와일드카드는 루트 도메인에 매칭되지 않아 둘 다 둔다.
+  # 도메인 구분은 HTTPRoute가 하므로 도메인을 추가해도 이 파일은 바꾸지 않는다.
+  - hostname: choimory.dev
+    service: http://gateway-proxy.choimory-infra.svc.cluster.local:80
+  - hostname: "*.choimory.dev"
+    service: http://gateway-proxy.choimory-infra.svc.cluster.local:80
+  - service: http_status:404
