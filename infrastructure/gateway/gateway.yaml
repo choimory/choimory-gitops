@@ -10,11 +10,15 @@ spec:
   provider:
     type: Kubernetes
     kubernetes:
+      # 자동 생성 이름(envoy-<네임스페이스>-<Gateway>-<해시>) 대신 고정 이름을 쓴다. cloudflared가 이 이름으로 연결한다.
+      # 주의: GatewayClass 단위 설정이라 이 GatewayClass로 Gateway를 두 개 이상 만들면 이름이 겹친다.
       envoyService:
+        name: gateway-proxy
         # kubeadm에는 LoadBalancer가 없어 기본값을 쓰면 ArgoCD에서 계속 Progressing으로 표시된다.
-        # 외부 접속은 2차 작업의 cloudflared가 클러스터 내부에서 이 Service로 연결한다.
+        # 외부 접속은 cloudflared가 클러스터 내부에서 이 Service로 연결한다.
         type: ClusterIP
       envoyDeployment:
+        name: gateway-proxy
         replicas: 1
         container:
           resources:

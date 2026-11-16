@@ -14,7 +14,7 @@
 | CI | 각 앱 저장소의 GitHub Actions. 이미지를 GHCR에 올리고 이 저장소의 이미지 태그를 커밋 |
 | 이미지 저장소 | GHCR (`ghcr.io/choimory/<앱>`, public) |
 | 매니페스트 | 앱은 Kustomize(base + overlays), 공용 도구는 Helm 차트 + values |
-| Gateway | Envoy Gateway (Gateway API). 공용 Gateway `gateway`를 모든 프로젝트가 같이 사용 |
+| Gateway | Envoy Gateway (Gateway API). 공용 Gateway `gateway`를 모든 프로젝트가 같이 사용. Envoy 프록시 Deployment, Service 이름은 `gateway-proxy`로 고정 |
 | 비밀값 | Sealed Secrets. 암호화된 SealedSecret만 저장소에 커밋 |
 | DB | PostgreSQL은 CloudNativePG, Redis는 공식 이미지 StatefulSet. 프로젝트·환경별로 하나씩 |
 | 스토리지 | local-path-provisioner, `reclaimPolicy: Retain` |
@@ -72,6 +72,7 @@ projects/<프로젝트명>/           # 프로젝트별 구성
 
 - ArgoCD 기본 동작은 자식 Application의 Health를 기다리지 않으므로, `infrastructure/argocd/values.yaml`에 Application Health 판단을 추가해 wave 순서를 지킨다
 - EnvoyProxy는 GatewayClass보다 먼저 만들어져야 해서 `sync-wave: "-1"`을 둔다
+- Envoy 프록시 이름은 자동 생성(`envoy-<네임스페이스>-<Gateway>-<해시>`) 대신 EnvoyProxy에서 `gateway-proxy`로 고정한다. 이 설정은 GatewayClass 단위라 같은 GatewayClass로 Gateway를 두 개 이상 만들면 이름이 겹친다
 
 ---
 
