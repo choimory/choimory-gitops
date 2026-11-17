@@ -1,0 +1,11 @@
+# 인프라 도구 전용 Gateway 구성. Envoy 프록시 Pod와 Service, Tailscale 프록시 Pod도 choimory-infra 네임스페이스에 만들어진다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-infra
+
+resources:
+  - gateway.yaml
+  - issuer.yaml
+  - certificate.yaml
+  - cloudflare-api-token.yaml

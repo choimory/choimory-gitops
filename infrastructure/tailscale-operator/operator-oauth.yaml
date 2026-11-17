@@ -1,0 +1,17 @@
+# Tailscale Operator가 tailnet에 기기(Operator, 프록시)를 등록할 때 쓰는 OAuth 클라이언트 (태그 tag:k8s-operator)
+# Secret 이름 operator-oauth와 키 client_id, client_secret은 Operator 차트가 기본으로 찾는 값이다.
+# kubeseal로 암호화한 값이라 커밋해도 되며, 이 네임스페이스와 이름에서만 풀린다.
+# 다시 만들기: histories의 domain-connect/task4.md "A-4 (OAuth 부분)" 참고. Tailscale 관리 화면 Trust credentials에서 재발급.
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: operator-oauth
+  namespace: choimory-infra
+spec:
+  encryptedData:
+    client_id: AgA4kHbuMqM360OXB24Nq7JSdt663nluZgoE0VSFJ1ELsk0LHnlRZwXNz4I3VRHz2frSaS98yaR+V6ubxsvEcIUQ4PEN0srkqNIr1pu+7cKaBG4/AyQHXhGTgGaSU7ux4hwFnCjysL9BzKKseGgEmebti/tQBQoFhNu4HgtYzdKEpeI5Yd18XjjjuK1e9vRzAM1RF86qwy3iZWU+mhmtuWa7kbeaMW/K8FjILjUcEz7We0V7B0VaN0spGiohKekb+3V8Z/3lhFWml7kVsrwJbZR5Cb6gqSijfq/8WIhq5lq5NAbITEnm4SwmmmFKEezIzqCP2t8cCKvhZQszgDunPbLoOdWqFpobAY55CSWHiJpW/5VdnLMJDvMY5Mfl30rFRQCZ1csE3VuLaEstVcvQQlScgC49Ti4NtdT5QessQ8BTumBvDIXDKAhPXg4LyED1jTbUdlWgzScEOJ4x38vuuXSG7/8z67HGbeC8LS95J3VIj3Nzn616xlnZrbMEXbUsXrXJ2wj0owQwGQdWYHaUKJnSx6owvvUKegX+gK7c2rOdzC3ttyONISRpDJTiJ6btTb5X14/qzOlaPbwmjdiixkNByoGVKM2AA0yrIxi4I/uGxf2u8v8x8xOj4YuEIyrGxiakQtl748IaBRE5+/TELuvTaJ3JdCaNFvCV9nqux5ds8eJfL/FIt4RCAM1zoGYotCG5TRPco+swJPFe4jbCTfXO2g==
+    client_secret: AgDimTIlrub6Cyyz1WpZ1O51VhizD9lpFYbbh67fpH7mudcCYpvFSV7A/gP8vf0vEom5lPQkaUD2p1mzpPnIfbt83TmZxQhXrULzslP4tKWK/lHwzfdxpX7UD/hakY76jpDNWM544h+DG5ag/qheXab2fLn++8AZuhDMDo6QsSFwAbtgYc7NRS2tBRrd1up6alQhoB3F437dlI3p0h9+Xcya2r8u5Dkgdh9/RPDulLT9ON+M77kSePm+kZOGFjkskiz0uC6nks6gr1FbLOjL9I3TGtNNnHZl+qrSITi2slpc2mMAgyft5INX95fIZTz0y06EqW7Ni0WqTimy95wC23D4/qOrYSdbc1d3PgJ/d77gvq/0oxW6zpvKCDWmY1fPxDgTk1AvNn04xBlcdu8JYF9b9dOn9PSqUIOTS9IOe2GKJsjDKYz45EUrn7WP8XCStwjYQjVK9GbfAMVHr2lfTGvL6V533qwxviUb6qC4R6leNhyG5KW69+5uqTizUIvy/gQOPqdzv7t7ZoU+v72VXlGyJ7QhNicxPeayYhEWVf65WgSKU071gKR9OqIBreRTsSH+JGet9xjplDqRZd9vmaKgGyhzGKFlIygd2kS4XG4Mv3co5xYDdKIM2kLV4IvkKun2KWFHtIU654f6wMOraksPOioNAsS+AbNiYg96WbRJVc0BWxgH7Me0yEkIEIaGvdBBFvjR2ZL44ecfCSy1Lz7ob0kN37LoFZvzNK6FYByLVj8C8T264buoE4v+ax2L9pYg3AZkALXEReE3MOwVD+I=
+  template:
+    metadata:
+      name: operator-oauth
+      namespace: choimory-infra

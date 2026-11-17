@@ -1,0 +1,33 @@
+# cert-manager Helm 설정
+# ClusterIssuer가 참조하는 Secret(cloudflare-api-token)은 설치 네임스페이스(choimory-infra)에서 찾는다.
+
+crds:
+  enabled: true
+  # 주의: Application을 지워도 CRD는 남긴다. CRD가 지워지면 모든 Certificate, Issuer가 함께 삭제된다.
+  keep: true
+
+# 설치 확인용 Helm hook Job. ArgoCD에서는 Application Health로 확인하므로 끈다.
+startupapicheck:
+  enabled: false
+
+# 인증서가 하나라 자원을 작게 잡는다.
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+
+webhook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+
+cainjector:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+# DNS-01 TXT 레코드 전파 확인이 클러스터 DNS에서 실패하면 아래를 켠다.
+# dns01RecursiveNameservers: "1.1.1.1:53,8.8.8.8:53"
+# dns01RecursiveNameserversOnly: true

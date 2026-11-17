@@ -1,0 +1,13 @@
+# infra-gateway 와일드카드 인증서. 인프라 도구는 *.infra.choimory.dev 아래 한 단계 이름을 쓴다 (예: argocd, staging-<도구>).
+# cert-manager가 만료 30일 전에 자동 갱신한다.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: infra-choimory-dev
+spec:
+  secretName: infra-choimory-dev-tls
+  dnsNames:
+    - "*.infra.choimory.dev"
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt
