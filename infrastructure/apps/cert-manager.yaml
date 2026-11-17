@@ -1,0 +1,31 @@
+# 인증서 발급, 자동 갱신 컨트롤러 (infra-gateway의 *.infra.choimory.dev 와일드카드 인증서)
+# ClusterIssuer, Certificate CRD를 제공하므로 infra-gateway보다 먼저 설치한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: choimory-infra
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.21.3
+      helm:
+        valueFiles:
+          - $values/infrastructure/cert-manager/values.yaml
+    - repoURL: https://github.com/choimory/choimory-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: choimory-infra
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # cert-manager CRD는 크기가 커서 일반 apply의 annotation 제한에 걸린다.
+      - ServerSideApply=true

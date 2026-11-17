@@ -16,6 +16,8 @@
 | 매니페스트 | 앱은 Kustomize(base + overlays), 공용 도구는 Helm 차트 + values |
 | Gateway | Envoy Gateway (Gateway API). 공용 Gateway `gateway`를 모든 프로젝트가 같이 사용. Envoy 프록시 Deployment, Service 이름은 `gateway-proxy`로 고정 |
 | 외부 접속 | Cloudflare Tunnel `choimory-tunnel`. 클러스터 안의 cloudflared가 Cloudflare로 나가는 연결을 맺고 요청을 `gateway-proxy`로 전달. 서버 인바운드 포트 없음 |
+| 인프라 도구 접속 | tailnet 전용 Gateway `infra-gateway` (`*.infra.choimory.dev`). Tailscale Operator가 프록시 Service `infra-gateway-proxy`를 tailnet 기기 `choimory-infra-gateway`로 노출. 인터넷, LAN에는 열리지 않음 |
+| 인증서 | 공개 앱은 Cloudflare Universal SSL. `infra-gateway`는 cert-manager가 Let's Encrypt 와일드카드 인증서를 Cloudflare DNS-01로 발급, 자동 갱신 |
 | 비밀값 | Sealed Secrets. 암호화된 SealedSecret만 저장소에 커밋 |
 | DB | PostgreSQL은 CloudNativePG, Redis는 공식 이미지 StatefulSet. 프로젝트·환경별로 하나씩 |
 | 스토리지 | local-path-provisioner, `reclaimPolicy: Retain` |
@@ -39,7 +41,10 @@ infrastructure/                 # 여러 프로젝트가 같이 쓰는 공용 �
 ├── cloudnative-pg/             # CloudNativePG 오퍼레이터 values
 ├── envoy-gateway/              # Envoy Gateway values
 ├── gateway/                    # EnvoyProxy, GatewayClass, 공용 Gateway
-└── cloudflared/                # cloudflared 설정(Tunnel 라우팅), Deployment, 인증 파일 SealedSecret
+├── cloudflared/                # cloudflared 설정(Tunnel 라우팅), Deployment, 인증 파일 SealedSecret
+├── cert-manager/               # cert-manager values
+├── tailscale-operator/         # Tailscale Operator values, OAuth SealedSecret
+└── infra-gateway/              # 인프라 도구 전용 EnvoyProxy, GatewayClass, Gateway, ClusterIssuer, Certificate, Cloudflare API 토큰 SealedSecret
 
 projects/<프로젝트명>/           # 프로젝트별 구성
 ├── argocd/                     # AppProject, ApplicationSet
@@ -69,13 +74,39 @@ projects/<프로젝트명>/           # 프로젝트별 구성
 | 3 | metrics-server | 차트 `3.14.0` |
 | 4 | cloudnative-pg | 차트 `0.29.1` |
 | 5 | envoy-gateway | `v1.10.0` |
+| 5 | cert-manager | 차트 `v1.21.3` |
+| 5 | tailscale-operator | 차트 `1.104.7` |
 | 6 | gateway (EnvoyProxy, GatewayClass, `gateway`) | |
+| 6 | infra-gateway (EnvoyProxy, GatewayClass, `infra-gateway`, ClusterIssuer, Certificate) | |
 | 7 | choimory-dev (프로젝트 AppProject, ApplicationSet) | |
 | 7 | choimory-cloudflared | `2026.11.0` |
 
 - ArgoCD 기본 동작은 자식 Application의 Health를 기다리지 않으므로, `infrastructure/argocd/values.yaml`에 Application Health 판단을 추가해 wave 순서를 지킨다
 - EnvoyProxy는 GatewayClass보다 먼저 만들어져야 해서 `sync-wave: "-1"`을 둔다
 - Envoy 프록시 이름은 자동 생성(`envoy-<네임스페이스>-<Gateway>-<해시>`) 대신 EnvoyProxy에서 `gateway-proxy`로 고정한다. 이 설정은 GatewayClass 단위라 같은 GatewayClass로 Gateway를 두 개 이상 만들면 이름이 겹친다
+- 그래서 `infra-gateway`는 GatewayClass `envoy-infra`, EnvoyProxy `envoy-proxy-infra`를 따로 두고 프록시 이름을 `infra-gateway-proxy`로 고정한다
+
+---
+
+## 인프라 도구 접속 (infra-gateway)
+
+```
+[공개]  브라우저 → Cloudflare → Tunnel → cloudflared → gateway-proxy → HTTPRoute → 앱
+[내부]  내 기기(Tailscale) → *.infra.choimory.dev (DNS: 100.x) → infra-gateway-proxy(tailnet 기기) → HTTPRoute → 인프라 도구
+```
+
+| 항목 | 값 |
+|---|---|
+| 도메인 | `*.infra.choimory.dev`. Cloudflare DNS에 A 레코드 → tailnet IP `100.x` (DNS only, 회색 구름) |
+| Gateway | `infra-gateway` (HTTPS 443) / GatewayClass `envoy-infra` / EnvoyProxy `envoy-proxy-infra` / 프록시 `infra-gateway-proxy` |
+| tailnet 기기 | `choimory-infra-gateway` (태그 `tag:k8s`), Operator `choimory-k8s-operator` (태그 `tag:k8s-operator`) |
+| 인증서 | ClusterIssuer `letsencrypt`, Certificate `infra-choimory-dev` → Secret `infra-choimory-dev-tls` |
+| 허용 범위 | `infra-gateway-access: "true"` 라벨이 있는 네임스페이스의 HTTPRoute (`choimory-infra`에 적용) |
+
+- 도메인 규칙: 서버 전체에 하나인 도구는 `{도구}.infra.choimory.dev`, 환경별 도구는 `staging-` 접두어 (공개 앱과 같은 규칙). 와일드카드 인증서가 한 단계만 덮으므로 하이픈을 쓴다
+- 도구 추가는 HTTPRoute 하나로 끝난다 (`parentRefs`에 `infra-gateway`, 네임스페이스에 라벨). 인증서와 DNS는 바꾸지 않는다
+- 공개 DNS에 `100.x`가 보여도 tailnet 밖에서는 닿지 않는다. tailnet IP는 프록시 Service를 지우지 않는 한 유지된다
+- Tailscale 정책 파일 `tagOwners`에 `tag:k8s-operator`(소유자 `autogroup:admin`), `tag:k8s`(소유자 `tag:k8s-operator`)가 있어야 한다
 
 ---
 
@@ -157,6 +188,9 @@ Actions 탭 → deploy → Run workflow (브랜치 stg 또는 main)
 | `choimory-dev-redis-secret` | `choimory-dev-{stg,prod}` | Redis 비밀번호 (redis, member-api가 같이 사용) |
 | `choimory-dev-member-api-secret` | `choimory-dev-{stg,prod}` | member-api JWT 서명 키 |
 | `choimory-dev-postgres-app` | `choimory-dev-{stg,prod}` | CloudNativePG가 자동 생성하는 DB 접속 정보 (SealedSecret 아님) |
+| `choimory-cloudflared-credentials` | `choimory-infra` | Cloudflare Tunnel 인증 파일 |
+| `cloudflare-api-token` | `choimory-infra` | cert-manager DNS-01용 Cloudflare API 토큰 (`choimory.dev`, DNS Edit + Zone Read) |
+| `operator-oauth` | `choimory-infra` | Tailscale Operator OAuth 클라이언트 (Devices Core, Auth Keys, Services, 태그 `tag:k8s-operator`) |
 
 새 SealedSecret 만들기 (서버):
 

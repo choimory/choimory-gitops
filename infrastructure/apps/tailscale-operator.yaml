@@ -1,0 +1,35 @@
+# 클러스터 Service를 tailnet 기기로 노출하는 Tailscale Operator
+# infra-gateway의 프록시 Service(loadBalancerClass: tailscale)에 tailnet IP를 붙이므로 infra-gateway보다 먼저 설치한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-operator
+  namespace: choimory-infra
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  sources:
+    - repoURL: https://pkgs.tailscale.com/helmcharts
+      chart: tailscale-operator
+      targetRevision: 1.104.7
+      helm:
+        valueFiles:
+          - $values/infrastructure/tailscale-operator/values.yaml
+    - repoURL: https://github.com/choimory/choimory-gitops.git
+      targetRevision: main
+      ref: values
+    # OAuth SealedSecret (kustomization.yaml이 values.yaml을 제외하고 SealedSecret만 묶는다)
+    - repoURL: https://github.com/choimory/choimory-gitops.git
+      targetRevision: main
+      path: infrastructure/tailscale-operator
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: choimory-infra
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # Tailscale CRD는 크기가 커서 일반 apply의 annotation 제한에 걸린다.
+      - ServerSideApply=true

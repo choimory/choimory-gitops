@@ -1,0 +1,22 @@
+# 인프라 도구(ArgoCD 등)가 HTTPRoute를 붙이는 tailnet 전용 Gateway와 인증서
+# Gateway API(envoy-gateway), 인증서(cert-manager), tailnet 노출(tailscale-operator)이 필요하므로 그 다음 wave에 설치한다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra-gateway
+  namespace: choimory-infra
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/choimory/choimory-gitops.git
+    targetRevision: main
+    path: infrastructure/infra-gateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: choimory-infra
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

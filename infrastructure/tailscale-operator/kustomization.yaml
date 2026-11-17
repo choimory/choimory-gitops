@@ -1,0 +1,8 @@
+# Tailscale Operator가 쓰는 OAuth SealedSecret. values.yaml은 Helm 설정이라 여기에 넣지 않는다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: choimory-infra
+
+resources:
+  - operator-oauth.yaml

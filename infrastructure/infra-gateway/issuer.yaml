@@ -1,0 +1,22 @@
+# Let's Encrypt 인증서 발급자
+# infra-gateway는 인터넷에서 닿지 않아 HTTP-01을 쓸 수 없으므로, Cloudflare DNS에 TXT 레코드를 만드는 DNS-01로 소유를 증명한다.
+# 주의: 실제 발급(prod) 서버다. 발급이 실패하면 반복 재시도하지 말고 Challenge 상태부터 확인한다 (발급 한도).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # 저장소가 public이라 이메일은 두지 않는다. Let's Encrypt는 만료 안내 메일을 보내지 않고, 갱신은 cert-manager가 한다.
+    privateKeySecretRef:
+      name: letsencrypt-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - choimory.dev

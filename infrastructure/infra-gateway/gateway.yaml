@@ -1,0 +1,70 @@
+# infra-gateway Envoy 프록시 실행 방식
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: envoy-proxy-infra
+  annotations:
+    # GatewayClass가 참조하므로 먼저 만들어야 한다. 같이 만들면 GatewayClass가 Accepted False로 남는다.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      # 공용 gateway-proxy와 같은 규칙으로 고정 이름을 쓴다.
+      # 주의: GatewayClass 단위 설정이라 이 GatewayClass로 Gateway를 두 개 이상 만들면 이름이 겹친다.
+      envoyService:
+        name: infra-gateway-proxy
+        # Tailscale Operator가 이 Service를 tailnet 기기로 노출하고 tailnet IP(100.x)를 붙인다.
+        # LAN이나 인터넷에는 열리지 않는다.
+        type: LoadBalancer
+        loadBalancerClass: tailscale
+        annotations:
+          # tailnet에 표시되는 기기 이름
+          tailscale.com/hostname: choimory-infra-gateway
+      envoyDeployment:
+        name: infra-gateway-proxy
+        replicas: 1
+        container:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+---
+# infra-gateway 전용 Gateway 종류. 프록시 이름 고정이 GatewayClass 단위라 공용 envoy와 분리한다.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy-infra
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: envoy-proxy-infra
+    namespace: choimory-infra
+---
+# 인프라 도구(ArgoCD 등) 전용 입구. tailnet에서만 접속된다.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: infra-gateway
+spec:
+  gatewayClassName: envoy-infra
+  listeners:
+    # Cloudflare를 거치지 않으므로 TLS를 여기서 직접 처리한다. 인증서는 certificate.yaml이 발급한다.
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "*.infra.choimory.dev"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: infra-choimory-dev-tls
+      allowedRoutes:
+        # infra-gateway-access 라벨이 있는 네임스페이스의 HTTPRoute만 허용한다.
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              infra-gateway-access: "true"

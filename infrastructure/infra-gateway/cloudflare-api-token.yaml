@@ -1,0 +1,15 @@
+# cert-manager가 Let's Encrypt DNS-01 인증에 쓰는 Cloudflare API 토큰 (choimory.dev, DNS Edit + Zone Read)
+# kubeseal로 암호화한 값이라 커밋해도 되며, 이 네임스페이스와 이름에서만 풀린다.
+# 다시 만들기: histories의 domain-connect/task4.md "토큰 생성과 서버 명령" 참고. Cloudflare 토큰 이름은 choimory-dev-cert-manager.
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: cloudflare-api-token
+  namespace: choimory-infra
+spec:
+  encryptedData:
+    api-token: AgCoCmZiRyAVPlrv3xd27gWIGf3oc5MiLVcMgFVChRtD67qkq5AMcMGKg9zOzrjtS7vR7Zr4CAaiDY9bRJQzTKvbtmD2cs0l8djfcqnbqb6qcGotv7mHnNn9XwvZKhe7cQYihIqBqJk+9VWVx2OCx8iMuqytGwJ29Vw1ex/wCDxmo1rlnq9O88aG/lxN8/vxY4iFj795ZNfLfWIsvX6ROmRLfMoZ47jTMv9qHAbjBt+0Pu9WyAirjHkYSrWRU3m5FvIsMZu/QCke3UoHDsRcqw0HLmHusGI9A5BjUBfp1dWxXjuCwcChIZvdCoFDyiM3T1s1MmUiYCAbK7ad3jOkwb24glq+KEaCEWrBPvQ3bm3u0JFzSR+Su3kyxu6H/Zsgl+9v4H748P6xk3QtVNsqxC3Jr4l026Bb6yK3BvEJEe55VOEnsZo2WfPpYjKYmka/f2wQuxfnnkGofnkRnBi/GrYyODV/X1xGLc2aJ6el4UxGlsu2a52NxwvGOPNLq528Z/ohN3bdL5af7fUckRYYSy9QLWUJCRXp5Ui057a3nvruDJq1EM07+Fx3KIraGIDpnmIlTVaCN4EJljSntt+MgHVjlazoJuScc4KtbAwsqs6hzKYYu4/tJ2OPMyR65DL3gcE1jKJVVKSuC8/Bcmkp6Z7VOGXoJ4gaCkpLKeK1mrL6U7dl5d+k8Cp4OHgKMvo5M3bR71zzBo1/IveGLMJLIC+R8yiQp4mST007LbU3zeBYwP7AtepnXyGWfPB6SfWtt0sdCr4T0Q==
+  template:
+    metadata:
+      name: cloudflare-api-token
+      namespace: choimory-infra
