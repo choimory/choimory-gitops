@@ -105,6 +105,11 @@ projects/<프로젝트명>/           # 프로젝트별 구성
 
 - 도메인 규칙: 서버 전체에 하나인 도구는 `{도구}.infra.choimory.dev`, 환경별 도구는 `staging-` 접두어 (공개 앱과 같은 규칙). 와일드카드 인증서가 한 단계만 덮으므로 하이픈을 쓴다
 - 도구 추가는 HTTPRoute 하나로 끝난다 (`parentRefs`에 `infra-gateway`, 네임스페이스에 라벨). 인증서와 DNS는 바꾸지 않는다
+
+| 도구 | 주소 | HTTPRoute |
+|---|---|---|
+| ArgoCD | `https://argocd.infra.choimory.dev` | 차트의 `server.httproute` (`infrastructure/argocd/values.yaml`). `server.insecure: true`로 TLS는 Gateway가 처리 |
+
 - 공개 DNS에 `100.x`가 보여도 tailnet 밖에서는 닿지 않는다. tailnet IP는 프록시 Service를 지우지 않는 한 유지된다
 - Tailscale 정책 파일 `tagOwners`에 `tag:k8s-operator`(소유자 `autogroup:admin`), `tag:k8s`(소유자 `tag:k8s-operator`)가 있어야 한다
 
@@ -223,11 +228,12 @@ kubectl create secret generic <이름> -n <네임스페이스> \
 
 ### 관리 화면과 DB 접속
 
-외부에 공개하지 않으므로 서버에서 port-forward로 열고, 원격에서는 SSH 터널로 접속한다.
+ArgoCD는 Tailscale을 켠 기기에서 `https://argocd.infra.choimory.dev`로 접속한다 (infra-gateway).
+그 외는 외부에 공개하지 않으므로 서버에서 port-forward로 열고, 원격에서는 SSH 터널로 접속한다.
 
 | 대상 | port-forward (서버) |
 |---|---|
-| ArgoCD | `kubectl -n choimory-infra port-forward svc/argocd-server 8080:443` |
+| ArgoCD (infra-gateway 장애 시) | `kubectl -n choimory-infra port-forward svc/argocd-server 8080:80` (`server.insecure`라 HTTP) |
 | PostgreSQL | `kubectl -n choimory-dev-{env} port-forward svc/choimory-dev-postgres-rw <포트>:5432 --address 127.0.0.1` (DB·사용자 `member`) |
 | Redis | `kubectl -n choimory-dev-{env} port-forward svc/choimory-dev-redis <포트>:6379 --address 127.0.0.1` |
 | member-api actuator | `kubectl -n choimory-dev-{env} port-forward deploy/choimory-dev-member-api <포트>:8081` (`/actuator/health/{liveness,readiness}`) |
