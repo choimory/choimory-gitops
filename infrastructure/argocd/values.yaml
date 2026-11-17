@@ -1,5 +1,10 @@
 # ArgoCD Helm 설정. 최초 helm install과 ArgoCD 자체 관리 Application이 같은 파일을 사용한다.
 
+# 접속 주소. 차트가 이 값으로 configs.cm의 url을 만든다.
+# infra-gateway(tailnet 전용)로만 열리므로 Tailscale을 켠 기기에서만 접속된다.
+global:
+  domain: argocd.infra.choimory.dev
+
 # SSO와 알림을 쓰지 않아 메모리를 줄이기 위해 끈다.
 dex:
   enabled: false
@@ -7,7 +12,22 @@ dex:
 notifications:
   enabled: false
 
+server:
+  # infra-gateway에 붙는 HTTPRoute를 차트가 만든다. 규칙은 기본값(/ 전체)을 쓴다.
+  httproute:
+    enabled: true
+    parentRefs:
+      - name: infra-gateway
+        namespace: choimory-infra
+        sectionName: https
+    hostnames:
+      - argocd.infra.choimory.dev
+
 configs:
+  params:
+    # TLS는 infra-gateway가 처리하고 argocd-server는 HTTP로 받는다.
+    # 주의: 끄면 argocd-server가 HTTPS로 리다이렉트해 무한 리다이렉트가 난다.
+    server.insecure: true
   cm:
     # ArgoCD는 기본적으로 자식 Application의 Health를 기다리지 않는다.
     # infrastructure/apps의 sync wave 순서가 지켜지도록 Health 판단을 추가한다.
