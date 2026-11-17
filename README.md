@@ -49,8 +49,8 @@ infrastructure/                 # 여러 프로젝트가 같이 쓰는 공용 �
 projects/<프로젝트명>/           # 프로젝트별 구성
 ├── argocd/                     # AppProject, ApplicationSet
 ├── namespaces/                 # Namespace, ResourceQuota, LimitRange, NetworkPolicy
-├── postgres/                   # CloudNativePG Cluster
-├── redis/                      # Redis StatefulSet, Service, SealedSecret
+├── postgres/                   # CloudNativePG Cluster (tailnet용 추가 Service 포함)
+├── redis/                      # Redis StatefulSet, Service, tailnet용 Service, SealedSecret
 └── <앱>/                        # Deployment, Service, HTTPRoute, SealedSecret
     ├── base/
     └── overlays/{stg,prod}/
@@ -228,13 +228,24 @@ kubectl create secret generic <이름> -n <네임스페이스> \
 
 ### 관리 화면과 DB 접속
 
-ArgoCD는 Tailscale을 켠 기기에서 `https://argocd.infra.choimory.dev`로 접속한다 (infra-gateway).
-그 외는 외부에 공개하지 않으므로 서버에서 port-forward로 열고, 원격에서는 SSH 터널로 접속한다.
+ArgoCD, PostgreSQL, Redis는 Tailscale을 켠 기기에서만 접속한다. 인터넷, 공유기 LAN에는 열려 있지 않다.
+
+| 대상 | 접속 주소 | 방식 |
+|---|---|---|
+| ArgoCD | `https://argocd.infra.choimory.dev` | infra-gateway |
+| PostgreSQL | `choimory-dev-postgres-{stg,prod}:5432` (DB·사용자 `member`, SSL `require`) | CNPG `Cluster`의 `managed.services.additional`이 만드는 `choimory-dev-postgres-tailnet` Service를 Tailscale Operator가 노출 |
+| Redis | `choimory-dev-redis-{stg,prod}:6379` | `choimory-dev-redis-tailnet` Service를 Tailscale Operator가 노출 |
+
+- 접속 주소는 tailnet 기기 이름(MagicDNS)이다. 앱(member-api)은 기존 `-rw`, `choimory-dev-redis` Service를 그대로 쓴다
+- tailnet 멤버는 함께 개발, 운영하는 사람만 초대한다. Tailscale 정책은 전체 허용이라 초대가 곧 ArgoCD, DB 접근 권한이다. 빠지는 사람은 Users에서 제거하고, 역할이 나뉘면 `grants`로 좁힌다
+- prod DB는 클라이언트에서 Read-only로 연결한다
+
+Tailscale 경로에 문제가 있을 때는 서버에서 port-forward로 열고, 원격에서는 SSH 터널로 접속한다.
 
 | 대상 | port-forward (서버) |
 |---|---|
-| ArgoCD (infra-gateway 장애 시) | `kubectl -n choimory-infra port-forward svc/argocd-server 8080:80` (`server.insecure`라 HTTP) |
-| PostgreSQL | `kubectl -n choimory-dev-{env} port-forward svc/choimory-dev-postgres-rw <포트>:5432 --address 127.0.0.1` (DB·사용자 `member`) |
+| ArgoCD | `kubectl -n choimory-infra port-forward svc/argocd-server 8080:80` (`server.insecure`라 HTTP) |
+| PostgreSQL | `kubectl -n choimory-dev-{env} port-forward svc/choimory-dev-postgres-rw <포트>:5432 --address 127.0.0.1` |
 | Redis | `kubectl -n choimory-dev-{env} port-forward svc/choimory-dev-redis <포트>:6379 --address 127.0.0.1` |
 | member-api actuator | `kubectl -n choimory-dev-{env} port-forward deploy/choimory-dev-member-api <포트>:8081` (`/actuator/health/{liveness,readiness}`) |
 

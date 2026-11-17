@@ -23,3 +23,13 @@ patches:
             memory: 64Mi
           limits:
             memory: 256Mi
+  # tailnet 기기 이름. Cluster 안의 목록 항목이라 병합 패치 대신 JSON 패치로 annotation만 추가한다.
+  - target:
+      group: postgresql.cnpg.io
+      kind: Cluster
+      name: choimory-dev-postgres
+    patch: |-
+      - op: add
+        path: /spec/managed/services/additional/0/serviceTemplate/metadata/annotations
+        value:
+          tailscale.com/hostname: choimory-dev-postgres-stg

@@ -18,3 +18,16 @@ spec:
     # 데이터가 /data/dev/choimory-dev/k8s/<네임스페이스>/<PVC 이름>/ 에 저장된다.
     storageClass: local-path-choimory-dev
     size: 5Gi
+  managed:
+    services:
+      # tailnet에서 primary(쓰기)에 접속하기 위한 Service. CNPG가 만들고 primary를 따라가도록 selector를 관리한다.
+      # Tailscale Operator가 이 Service를 tailnet 기기로 노출한다. 기기 이름은 환경별 overlay에서 지정한다.
+      # 주의: overlay가 JSON 패치로 additional[0]에 annotation을 넣으므로 순서를 바꾸면 overlay도 함께 고친다.
+      additional:
+        - selectorType: rw
+          serviceTemplate:
+            metadata:
+              name: choimory-dev-postgres-tailnet
+            spec:
+              type: LoadBalancer
+              loadBalancerClass: tailscale

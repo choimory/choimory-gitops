@@ -35,3 +35,11 @@ patches:
                     memory: 16Mi
                   limits:
                     memory: 64Mi
+  # tailnet 기기 이름
+  - patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: choimory-dev-redis-tailnet
+        annotations:
+          tailscale.com/hostname: choimory-dev-redis-stg
