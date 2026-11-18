@@ -254,6 +254,20 @@ Tailscale 경로에 문제가 있을 때는 서버에서 port-forward로 열고,
 - 서버의 3000, 8080 등은 Docker Compose 앱이 쓰고 있을 수 있어 겹치지 않는 포트를 쓴다
 - 비밀번호는 각 Secret에서 확인한다 (`kubectl get secret <이름> -o jsonpath='{.data.<키>}' | base64 -d`)
 
+### PostgreSQL 다시 만들기
+
+`initdb`(DB 이름, 소유 계정)는 `Cluster`를 처음 만들 때만 적용된다. 바꾸려면 `Cluster`를 지워 다시 만든다. 데이터는 사라진다.
+
+1. 바뀐 매니페스트와 SealedSecret을 push하고 Secret이 풀렸는지 확인한다
+2. `kubectl -n choimory-dev-{env} delete cluster choimory-dev-postgres`. `selfHeal`이 켜져 있어 ArgoCD가 곧바로 다시 만든다
+3. 새 `Cluster`가 `Cluster in healthy state`가 될 때까지 확인한다. 예전 인스턴스가 정리되기 전에 다시 만들어지면 상태가 꼬일 수 있다
+   - `Cluster is unrecoverable and needs manual intervention`: PVC가 남지 않은 것을 확인하고 `Cluster`를 한 번 더 지운다
+   - 예전 `choimory-dev-postgres-1` Pod, PVC가 Terminating에서 멈춤: Pod를 `--grace-period=0 --force`로 지우고, PVC가 사라진 뒤 `Cluster`를 한 번 더 지운다
+4. `kubectl -n choimory-dev-{env} rollout restart deploy/choimory-dev-member-api`
+
+- 다른 도메인 DB를 추가할 때는 `Cluster`를 다시 만들지 않는다. 계정은 `managed.roles`(비밀번호는 basic-auth SealedSecret), DB는 CNPG `Database` 리소스로 추가한다
+- 같은 도메인의 다른 앱(예: batch)은 같은 DB를 쓰고, 그 앱만 쓰는 데이터는 별도 스키마(예: `batch`)에 둔다
+
 ### 주의
 
 - `choimory-dev-protected`의 앱(namespaces, postgres, redis)은 prune이 꺼져 있어, 매니페스트에서 리소스 이름을 바꾸거나 지우면 예전 리소스를 직접 정리해야 한다
