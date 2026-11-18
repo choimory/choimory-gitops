@@ -2,6 +2,26 @@
 
 홈서버 k8s 클러스터의 GitOps 저장소. ArgoCD가 이 저장소의 `main` 브랜치를 보고 클러스터 구성 전체를 관리한다.
 
+## 목차
+
+- [구성](#구성)
+  - [전체 구조](#전체-구조)
+- [디렉토리 구조](#디렉토리-구조)
+- [공용 도구와 설치 순서](#공용-도구와-설치-순서)
+- [인프라 도구 접속 (infra-gateway)](#인프라-도구-접속-infra-gateway)
+- [프로젝트: choimory-dev](#프로젝트-choimory-dev)
+  - [네임스페이스와 Application](#네임스페이스와-application)
+  - [도메인](#도메인)
+  - [자원](#자원)
+  - [데이터 저장 위치](#데이터-저장-위치)
+- [배포 흐름](#배포-흐름)
+- [비밀값 (Sealed Secrets)](#비밀값-sealed-secrets)
+- [처음부터 설치하기](#처음부터-설치하기)
+- [운영](#운영)
+  - [관리 화면과 DB 접속](#관리-화면과-db-접속)
+  - [PostgreSQL 다시 만들기](#postgresql-다시-만들기)
+  - [주의](#주의)
+
 ---
 
 ## 구성
@@ -21,6 +41,39 @@
 | 비밀값 | Sealed Secrets. 암호화된 SealedSecret만 저장소에 커밋 |
 | DB | PostgreSQL은 CloudNativePG, Redis는 공식 이미지 StatefulSet. 프로젝트·환경별로 하나씩 |
 | 스토리지 | local-path-provisioner, `reclaimPolicy: Retain` |
+
+### 전체 구조
+
+공개 앱은 Cloudflare Tunnel로, 인프라 도구와 DB는 Tailscale(tailnet)로만 들어온다. 서버에 열린 인바운드 포트는 없다.
+
+```mermaid
+flowchart LR
+    user["사용자 브라우저"] --> cf["Cloudflare<br/>Universal SSL"]
+    dev["내 기기<br/>(Tailscale)"]
+
+    subgraph cluster["홈서버 k8s 클러스터"]
+        subgraph infra["choimory-infra"]
+            cfd["cloudflared"]
+            gw["gateway-proxy<br/>(공용 Gateway)"]
+            igw["infra-gateway-proxy<br/>(Let's Encrypt)"]
+            argocd["ArgoCD"]
+            ts["Tailscale 프록시"]
+        end
+        subgraph app["choimory-dev-{stg,prod}"]
+            front["front"]
+            api["member-api"]
+            pg[("PostgreSQL")]
+            redis[("Redis")]
+        end
+    end
+
+    cf -- "Tunnel (TCP 443)" --> cfd --> gw
+    gw -- "HTTPRoute" --> front & api
+    api --> pg & redis
+
+    dev -- "*.infra.choimory.dev" --> igw -- "HTTPRoute" --> argocd
+    dev -- "choimory-dev-{postgres,redis}-{env}" --> ts --> pg & redis
+```
 
 ---
 
@@ -168,15 +221,23 @@ projects/<프로젝트명>/           # 프로젝트별 구성
 
 ## 배포 흐름
 
-```
-앱 저장소 push (dev, stg, main)
-  → Actions test job만 자동 실행
+```mermaid
+sequenceDiagram
+    actor dev as 개발자
+    participant app as 앱 저장소 Actions
+    participant ghcr as GHCR
+    participant gitops as choimory-gitops (main)
+    participant argocd as ArgoCD
+    participant k8s as 클러스터
 
-Actions 탭 → deploy → Run workflow (브랜치 stg 또는 main)
-  → test
-  → 이미지 빌드, GHCR push (태그 stg-<커밋 SHA> / prod-<커밋 SHA>)
-  → 이 저장소 main의 overlays/{stg,prod} 이미지 태그를 github-actions[bot]이 커밋
-  → ArgoCD가 변경을 감지해 클러스터에 반영
+    dev->>app: push (dev, stg, main)
+    app->>app: test job만 자동 실행
+    dev->>app: deploy → Run workflow (stg 또는 main)
+    app->>app: test
+    app->>ghcr: 이미지 빌드, push (stg-<커밋 SHA> / prod-<커밋 SHA>)
+    app->>gitops: overlays/{stg,prod} 이미지 태그 커밋 (github-actions[bot])
+    argocd->>gitops: 변경 감지
+    argocd->>k8s: 반영 (새 이미지로 롤링 업데이트)
 ```
 
 - 수동 실행은 `stg`, `main` 브랜치만 허용한다. 다른 브랜치를 고르면 deploy job이 실패한다
@@ -196,6 +257,19 @@ Actions 탭 → deploy → Run workflow (브랜치 stg 또는 main)
 | `choimory-cloudflared-credentials` | `choimory-infra` | Cloudflare Tunnel 인증 파일 |
 | `cloudflare-api-token` | `choimory-infra` | cert-manager DNS-01용 Cloudflare API 토큰 (`choimory.dev`, DNS Edit + Zone Read) |
 | `operator-oauth` | `choimory-infra` | Tailscale Operator OAuth 클라이언트 (Devices Core, Auth Keys, Services, 태그 `tag:k8s-operator`) |
+
+SealedSecret은 Secret을 git에 안전하게 올리기 위한 방식이다. 클러스터 안에서는 controller가 풀어 만든 일반 Secret을 Pod가 참조한다.
+
+```mermaid
+flowchart LR
+    sh["서버 셸<br/>kubectl create secret --dry-run"] -- "Secret YAML" --> seal["kubeseal<br/>(controller 공개키로 암호화)"]
+    seal -- "SealedSecret" --> git["choimory-gitops"]
+    git --> argocd["ArgoCD"] --> ss["SealedSecret 리소스"]
+    ss -- "controller 개인키로 복호화" --> sec["일반 Secret<br/>(같은 이름, 네임스페이스)"]
+    sec -- "secretKeyRef" --> pod["Pod"]
+```
+
+- 클러스터 안의 Secret은 일반 Secret과 같다(base64). 조회 권한(RBAC)으로 보호한다
 
 새 SealedSecret 만들기 (서버):
 
