@@ -20,9 +20,18 @@ patches:
             containers:
               - name: choimory-dev-redis
                 # stg는 재시작 시 토큰이 사라져도 되므로 AOF와 스냅샷을 끈다.
+                # ACL: 이름 없는 default 사용자를 끄고 이름 있는 사용자로만 접속한다.
                 args:
-                  - --requirepass
-                  - $(REDIS_PASSWORD)
+                  - --user
+                  - default
+                  - "off"
+                  - --user
+                  - $(REDIS_USERNAME)
+                  - "on"
+                  - ">$(REDIS_PASSWORD)"
+                  - "~*"
+                  - "&*"
+                  - "+@all"
                   - --appendonly
                   - "no"
                   - --save

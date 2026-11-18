@@ -1,0 +1,17 @@
+# PostgreSQL member 도메인 계정(basic-auth). CNPG initdb와 member-api가 같은 Secret을 읽는다.
+# kubeseal로 암호화한 값이라 커밋해도 되며, 이 네임스페이스와 이름에서만 풀린다.
+# 다시 만들기: histories의 domain-connect/task6.md "SealedSecret 생성 (서버)" 참고. initdb는 처음 만들 때만 적용되므로 비밀번호 변경은 DB에서 직접 한다.
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: choimory-dev-postgres-member
+  namespace: choimory-dev-stg
+spec:
+  encryptedData:
+    password: AgBZOZ88jo32RlAv1M/Z6PwwFA35zofvfS2Qge497WZCj8Pyiivw5Q02Ltzh03YT2YM4lrHBNNKxSjWaCYpMeW/VKpkKXNu4r9UpykCLoZ8K4bC66+0y6c4AQ3X73cLXEsq65hUNJD3HZJx6V2aOCEHkoSaoiKf3OcV558R+zayGcqrupDLxOhhvWHqpbDuVa/+im9jKVtIs/lqb35Yt7MrSAhSL6o0GjqnRAXpd9KnBfmSvHVfqMMpX9mtjtZ4lfDfRB+O+JOPhQ/5R0Y+0M/i2BB1mC81HGozO+X6yD2u6FWAujt3fPPtik3VnZIJLPHIelgexGfxKHNpd/JWIykoGzFYR2gh2VDu8Oj2WOlEmDto8qTCsW0pvg5vCZDa0zo8rzQhQZRyQNcQG6bv+pum+hlQFt8b9o5pZYv/GDvCM7T2LdLJLjGi/7TQ6NFaLwapnU5UawaoyAe4ipxOnf1x2M0GEXEZ/H4CZUEAqlrkcNtR5Boxc2KBjVBudfpLf5xsx3EWbdyqqE8nOrSTZuCd0ipn2m65ei/iSHY42+5YNKMU0wUu286+Has1us5FgYnb2iopq8Iw8AixqLDJHwgMdmDbnDiiRer0JaQNboEAg3hAimkjAfIiy59+aRb0oinF109M+cwACBm2GWn1r8ScZoK/mQ36KV5OR//M1Yv8skpR5nZoO8J7ZPENNFTPFC/cw7+7USME=
+    username: AgAYEbM1DVkSSK4W7Z+IS4nDTk+LcH+EsZxy/5WYBl5LPROsjMlE+JoSOL0TLznokZ+e57Y+bqqQPFPypZDPPDa6Uq8WrbR1OV9O3DNcDgn6A30L0pUDu88dGi8rJaDSDgUzhbYGzqDzBAdwfcORVtE6aZyuHI4pkKfbbaEzVMOQtaQWJk2x7g4NydR2WWpRMR4dNF6QuvE5gcMNvO4d+3zHgflxx/LrfnShehxDIQxLm/nZzE8g9fjnPz55+VygtWY0RpexGi1lyh9LsNUcBljxncdSbnQtItHgTG2Pw6e3RPFj8nu9g8ATnAc3T+S9LrJiSNabKRVV/NjyYvFRNotunAJgDXCS++gv9WC0gRHT2bs/dzfRepC/IKT0C1xYkNBCj0C65sE7abu8tu0WUl3UGKECGCakpR3MSHJlkK9pEedOeuW20BOB5r5jYSvcmHuwDHN8hNT3xdteN+g0UsAzOz8kSyJ+DY3oCKPM/XNrleN66SPLsimmJNmLnKU4JVG3ig35zWjYllXzwpu975AhtR7bb1XFPDc+F0qFMUuC0uyL7Ni1xcaxk522m7Ll4xv5eNyc5TkibcdHDXAgnAY3VOtDUtsyD+Zm4vt02uzIp08Et3E7ivaYd3SAPMeWnC7s5nAY35QhoPfYKyAmAd/vbrkZ/oERkUF83MJDAKaketUnELmakx+HHOOFR5aTCTYOh9W+QH7arQuzIRk19IoAWq5f
+  template:
+    metadata:
+      name: choimory-dev-postgres-member
+      namespace: choimory-dev-stg
+    type: kubernetes.io/basic-auth

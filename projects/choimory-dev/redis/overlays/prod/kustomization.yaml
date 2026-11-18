@@ -20,9 +20,18 @@ patches:
             containers:
               - name: choimory-dev-redis
                 # 재시작해도 사용자가 로그아웃되지 않도록 prod는 AOF를 켠다.
+                # ACL: 이름 없는 default 사용자를 끄고 이름 있는 사용자로만 접속한다.
                 args:
-                  - --requirepass
-                  - $(REDIS_PASSWORD)
+                  - --user
+                  - default
+                  - "off"
+                  - --user
+                  - $(REDIS_USERNAME)
+                  - "on"
+                  - ">$(REDIS_PASSWORD)"
+                  - "~*"
+                  - "&*"
+                  - "+@all"
                   - --appendonly
                   - "yes"
                   - --appendfsync

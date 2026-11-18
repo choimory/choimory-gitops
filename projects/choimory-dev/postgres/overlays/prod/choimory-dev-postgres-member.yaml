@@ -1,0 +1,17 @@
+# PostgreSQL member 도메인 계정(basic-auth). CNPG initdb와 member-api가 같은 Secret을 읽는다.
+# kubeseal로 암호화한 값이라 커밋해도 되며, 이 네임스페이스와 이름에서만 풀린다.
+# 다시 만들기: histories의 domain-connect/task6.md "SealedSecret 생성 (서버)" 참고. initdb는 처음 만들 때만 적용되므로 비밀번호 변경은 DB에서 직접 한다.
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: choimory-dev-postgres-member
+  namespace: choimory-dev-prod
+spec:
+  encryptedData:
+    password: AgCNb0i6Gi2Flrvtf+jWMQHP9LJEdlz/XJLJ0/PYVXj05ICA+khADQKVAUTOknTi2xcsgBryCaaOQqOjMlFmMjk1VhaHu0OM4u21IDVnlbhU6cmfJ2ftNWlbA6xT0ucbwVHweM5WWfDreLWYrCWcneThsSSosPEsmqb6BISm6Wxzcl7dr0Vb/mQorYrw0GPjZ0QXNyfM0VuGPy9q5li2TC/23wGYqlaXdfTlrx9lV1/I25LpsanfCBKitulHUZYQ9uHCNNUSt32BfrQRpRjoGQmxRiYfgLI1r5pj1fEO9OMV9hvEQmWu6GtdrZbu7xzpodmdGzLS5chw+03cC+andQGtBvliTT4QYenZCccWTq2TnwbBt9dTgjMi8bhFF3mGHLfxgkcG5+UACt7WTr1q8+sVbWtT8peR6466gOnVFbQurPvEcRzKvNMdHbShTx8qbuCg0f+HlnpgwUUnc+59H4xykIrKc4H4rsnsGtGEyLXt3q+WR4CQfBcLRezRr8nIh82nkfWtdfXK1KuKY2MoX/FnZVvcfET3+eW0bbKIDgoJWnphyDgzQ9O8gu0vbkUQB3BpqFQRr0WywNmokyNluMcnTqoZjQc9YHNTGuM0qYNponL7ZfZmk7DTdN+cd8DSILiH/ZJeBDMJmulKlHjmhm7iR+BbiZZEd2NOTGgqMQ2KWBAEW3/03qwtg/Xxk40z/wJ+EVWxiiA=
+    username: AgDCRHv6e88OgcZVKtUhDjFRAE7tmEjXUkxgrRTh7wZiX+SCYth/tMlOUk+tCPNt83JOHGeGzrzF76UL+ffKsQ68pAHFsWN3bTJD+FqPhdnGKh4Iff0AehWWpncd23okh2+aW/foxfzB/ziN4poTVdu9TtQ+eGg5b07dD7Yovra+SxlLybbvkh2uMPYeYXUZE07dU2aYGFqoNPcjoSjM0i7iZbQ5KOfbMpjGoMtFk0+d8Mx9uiN/qnunQuqp+0GTGl+Wiode1aQGYYKCOked3KlhGlY0roXRQ1TWDB6g3XvbXzYpvrOlSuClp4QXEMlilEk61p5JT5ZG+JF3Ox5caPtXxeeSdLXhCKuhwlKTVQweVDIsBq7R09TbnzSZLaZa8dqoAspMAfV+r0mpvEymRTwKtCE1aryboxCYAUIOAHfS5yH3cF7eTqMcrmIE3KoLedKvFwAs3RIjeZN7+ihAnL7v5k6sCQMEoX0c5wSfr4r+rOlcj72guzPHKM/IBgVOmOOdwggsOO4E15SnuyQsz6ARTYAqpp3cTvV711cXooVgC2vXt0iOMyCgqAcpm6WMx6zgr9fqTovpjUAGZeBJuUmPyZx91l+L1Hu6n+RZ/Vp2VASmEkrnzltnLo5pp23Tz8moWHCd3TOzFbP2/Sz1W5oMPuHZGSAg+iOFJZKHo12QgqKQNCFk+XwrUiHvtfB/xusopWdXA50wuMW/B8xjOYX5YN0o
+  template:
+    metadata:
+      name: choimory-dev-postgres-member
+      namespace: choimory-dev-prod
+    type: kubernetes.io/basic-auth
