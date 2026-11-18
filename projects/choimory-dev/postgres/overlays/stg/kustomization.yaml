@@ -6,6 +6,7 @@ namespace: choimory-dev-stg
 
 resources:
   - ../../base
+  - choimory-dev-postgres-member.yaml
 
 patches:
   - patch: |-

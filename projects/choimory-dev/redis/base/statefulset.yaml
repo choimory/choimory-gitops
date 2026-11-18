@@ -22,7 +22,12 @@ spec:
             - name: redis
               containerPort: 6379
           env:
-            # 6단계에서 SealedSecret으로 생성하는 Secret
+            # ACL 사용자 이름과 비밀번호. overlay의 SealedSecret에서 주입한다.
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: choimory-dev-redis-secret
+                  key: username
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:

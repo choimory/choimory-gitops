@@ -190,9 +190,9 @@ Actions 탭 → deploy → Run workflow (브랜치 stg 또는 main)
 
 | Secret | 네임스페이스 | 용도 |
 |---|---|---|
-| `choimory-dev-redis-secret` | `choimory-dev-{stg,prod}` | Redis 비밀번호 (redis, member-api가 같이 사용) |
+| `choimory-dev-redis-secret` | `choimory-dev-{stg,prod}` | Redis ACL 사용자 `username`, `password` (redis, member-api가 같이 사용) |
 | `choimory-dev-member-api-secret` | `choimory-dev-{stg,prod}` | member-api JWT 서명 키 |
-| `choimory-dev-postgres-app` | `choimory-dev-{stg,prod}` | CloudNativePG가 자동 생성하는 DB 접속 정보 (SealedSecret 아님) |
+| `choimory-dev-postgres-member` | `choimory-dev-{stg,prod}` | PostgreSQL member 도메인 계정 (basic-auth `username`, `password`). CNPG `initdb`와 member-api가 같이 사용 |
 | `choimory-cloudflared-credentials` | `choimory-infra` | Cloudflare Tunnel 인증 파일 |
 | `cloudflare-api-token` | `choimory-infra` | cert-manager DNS-01용 Cloudflare API 토큰 (`choimory.dev`, DNS Edit + Zone Read) |
 | `operator-oauth` | `choimory-infra` | Tailscale Operator OAuth 클라이언트 (Devices Core, Auth Keys, Services, 태그 `tag:k8s-operator`) |
@@ -233,10 +233,12 @@ ArgoCD, PostgreSQL, Redis는 Tailscale을 켠 기기에서만 접속한다. 인�
 | 대상 | 접속 주소 | 방식 |
 |---|---|---|
 | ArgoCD | `https://argocd.infra.choimory.dev` | infra-gateway |
-| PostgreSQL | `choimory-dev-postgres-{stg,prod}:5432` (DB·사용자 `member`, SSL `require`) | CNPG `Cluster`의 `managed.services.additional`이 만드는 `choimory-dev-postgres-tailnet` Service를 Tailscale Operator가 노출 |
-| Redis | `choimory-dev-redis-{stg,prod}:6379` | `choimory-dev-redis-tailnet` Service를 Tailscale Operator가 노출 |
+| PostgreSQL | `choimory-dev-postgres-{stg,prod}:5432` (DB `member`, 사용자 `choimory_dev_member`, SSL `require`) | CNPG `Cluster`의 `managed.services.additional`이 만드는 `choimory-dev-postgres-tailnet` Service를 Tailscale Operator가 노출 |
+| Redis | `choimory-dev-redis-{stg,prod}:6379` (사용자 `choimory-dev`, member는 database `1`) | `choimory-dev-redis-tailnet` Service를 Tailscale Operator가 노출 |
 
 - 접속 주소는 tailnet 기기 이름(MagicDNS)이다. 앱(member-api)은 기존 `-rw`, `choimory-dev-redis` Service를 그대로 쓴다
+- 계정 규칙: PostgreSQL은 도메인별 계정(`choimory_dev_{도메인}`), Redis는 공통 계정 `choimory-dev`에 도메인별 database 번호(0: api-gateway 예약, 1: member). 비밀번호는 위 SealedSecret에 있다
+- Redis는 ACL로 이름 없는 `default` 사용자를 꺼 두어 username 없이 접속할 수 없다 (`redis-cli -h <주소> --user choimory-dev --askpass`)
 - tailnet 멤버는 함께 개발, 운영하는 사람만 초대한다. Tailscale 정책은 전체 허용이라 초대가 곧 ArgoCD, DB 접근 권한이다. 빠지는 사람은 Users에서 제거하고, 역할이 나뉘면 `grants`로 좁힌다
 - prod DB는 클라이언트에서 Read-only로 연결한다
 
